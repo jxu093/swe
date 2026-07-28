@@ -15,16 +15,21 @@ Decks in this file:
 6. **Trees**
 7. **Tries**
 8. **Backtracking**
-9. **System Design — DDIA Ch 1**
-10. **System Design — DDIA Ch 2–3**
-11. **System Design — Replication, Partitioning, Consistency, CAP**
-12. **System Design — Common design patterns & primitives**
-13. **Linked List**
-14. **Heap / Priority Queue**
-15. **Graphs**
-16. **1-D DP**
-17. **Intervals**
-18. **Greedy**
+9. **System Design — Fundamentals & Estimation**
+10. **System Design — Data Storage & Modeling**
+11. **System Design — Replication, Partitioning & Consistency**
+12. **System Design — Coordination & Transactions**
+13. **System Design — Caching, CDN & Hashing**
+14. **System Design — Messaging, Streaming & Real-time**
+15. **System Design — Networking & Load Balancing**
+16. **System Design — Reliability, Observability, Deployment & Rate Limiting**
+17. **Linked List**
+18. **Heap / Priority Queue**
+19. **Graphs**
+20. **1-D DP**
+21. **Intervals**
+22. **Greedy**
+23. **System Design — Situational Drills**
 
 At the bottom: a **deck template** for topics still to add (Advanced Graphs, 2-D DP, Bit Manipulation, Math & Geometry).
 
@@ -840,6 +845,13 @@ What are the two recursive choices and the constraints that prune invalid branch
 ↳ **A:** At each position, you can add `(` if `open_count < n`, or `)` if `close_count < open_count`. Base case: `len(path) == 2*n` → append to results. The constraint `close < open` is the key pruning rule — it ensures you never close a bracket that wasn't opened. This is backtracking with an implicit stack (open count acts as the stack depth). Total results = Catalan number C(n).
 
 ---
+**Q10.** *Car Fleet (LC 853): n cars at position[i] with speed[i] drive toward a target on a 1-lane road. A faster car catching a slower one ahead joins its fleet (moves at the slower speed, can't pass). Count the fleets that arrive.* Optimal approach?
+
+.
+.
+↳ **A:** Insight: a car can only ever be blocked by a car **ahead** of it (closer to the target). **Sort cars by position descending** and compute each one's **time to target = `(target - position) / speed`**. Scan the sorted cars keeping the current lead fleet's time: if a car's time is **greater** than the lead ahead, it can't catch up → it's a **new fleet** (count++, it becomes the new lead); if its time is **≤** the lead, it merges into that fleet. The number of leads = number of fleets. O(n log n) sort + O(n) scan. (This is the monotonic-stack pattern — you push a new time only when it exceeds the stack top; an explicit stack isn't even required since you only compare to the lead.)
+
+---
 
 ## 4. Binary Search
 
@@ -1121,6 +1133,13 @@ Max path sum — what two quantities do you compute per recursion?
 ↳ **A:** It's BFS level-order, but you only record the **last node of each level**. Process one level at a time (record queue length, pop that many); after each level, append the last-popped value. Alternatively, DFS with a `depth` parameter: visit right subtree first; if `depth == len(result)`, this is the first node seen at this depth from the right → append it. The DFS approach is O(n) time, O(h) space.
 
 ---
+**Q15.** *House Robber III (LC 337): houses form a binary tree; you can't rob two directly-connected houses. Maximize the loot.* What's the optimal approach, and why does naive recursion blow up?
+
+.
+.
+↳ **A:** Naive recursion (rob node → recurse on grandchildren; skip node → recurse on children) recomputes overlapping subtrees exponentially. **Optimal = tree DP: one post-order DFS returning a pair `(rob, skip)` per node.** `rob = node.val + left.skip + right.skip` (rob here, so both children must be skipped); `skip = max(left.rob, left.skip) + max(right.rob, right.skip)` (don't rob here, each child free to choose). Answer = `max(root.rob, root.skip)`. O(n) time, O(h) stack — each node visited once, returning both states kills the recomputation.
+
+---
 
 ## 7. Tries
 
@@ -1231,7 +1250,7 @@ How does "Word Search II" use a trie?
 
 ---
 
-## 9. System Design — DDIA Ch 1
+## 9. System Design — Fundamentals & Estimation
 
 **Q1.** You're presenting a design doc for a new service. How would you argue that the design addresses reliability, scalability, and maintainability — what concrete evidence would you point to for each?
 
@@ -1244,79 +1263,147 @@ How does "Word Search II" use a trie?
 
 .
 .
-↳ **A:** Fault is one component deviating from spec. Failure is the system as a whole stopping service. Fault tolerance = preventing faults from cascading into failure.
+↳ **A:** Fault = one component deviates from spec (a disk dies, a node hangs). Failure = the system as a whole stops serving. **Fault tolerance = stopping faults from cascading into failure.** *Where it shows up:* every availability target — a 3-replica DB tolerates one node fault without failure; redundancy, retries, and bulkheads are how you hit '99.99%'. *Tradeoff:* tolerance costs redundancy (money) and failover logic that can itself be buggy.
 
 ---
 **Q3.** Why measure latency with percentiles rather than averages?
 
 .
 .
-↳ **A:** Averages hide tail behavior. p95/p99 show what slow users experience. Tail latency amplifies under fan-out.
+↳ **A:** Averages hide tail behavior; p95/p99 show what slow users actually experience, and tail latency amplifies under fan-out. *Where it shows up:* SLOs are written and alerted on p99/p99.9 — the mean can look healthy while 1% of users time out. *Tradeoff:* chasing p99.9 is far more expensive than p50, so you optimize the tail only where the product needs it.
 
 ---
 **Q4.** What is tail latency amplification?
 
 .
 .
-↳ **A:** If a request fans out to many backends and waits for all, overall latency approaches the slowest backend's tail. 100 backends with p99=1s → ~63% of requests hit at least one slow one.
+↳ **A:** If a request fans out to many backends and waits for all, overall latency approaches the slowest backend's tail — 100 backends at p99=1s means ~63% of requests hit at least one slow one. *Where it shows up:* scatter-gather designs — search across 100 shards, any fan-out read. *Fix/tradeoff:* hedged (backup) requests — send a duplicate to a second replica after a short delay, take the first to answer — cut the tail at the cost of extra load.
 
 ---
 **Q5.** What are the two fundamental approaches to scaling a system, and what does each one trade off against the other?
 
 .
 .
-↳ **A:** Vertical (bigger machine): simple, limited ceiling. Horizontal (more machines): elastic, demands partitioning and failure handling.
+↳ **A:** Vertical (bigger machine): simple, but a hard ceiling. Horizontal (more machines): elastic, but demands partitioning + failure handling. *Where it shows up:* the moment one Postgres can't keep up you face this fork. *Tradeoff:* scaling up delays complexity but doesn't remove the ceiling; scaling out removes the ceiling but you now own sharding, rebalancing, and partial-failure handling.
+
+---
+**Q6.** Walk through the 6 phases of a system design interview in order. What do you cover in each phase?
+
+.
+.
+↳ **A:** (1) Requirements (functional + non-functional). (2) Back-of-envelope estimation (QPS, storage, bandwidth). (3) API design. (4) Data model. (5) High-level diagram. (6) Deep-dive into 1–2 hard components; discuss bottlenecks and tradeoffs.
+
+---
+**Q7.** At the start of any system design interview, there are two categories of clarifying questions you should always ask before designing anything. What are they?
+
+.
+.
+↳ **A:** (1) Scale: DAU, read/write ratio, data retention? (2) Consistency expectations: can this tolerate eventual consistency anywhere?
+
+---
+**Q8.** What's the actual *method* of back-of-envelope estimation — not just computing numbers, but using them to drive the design?
+
+.
+.
+↳ **A:** The method is: **compute a number → compare it to a single node's capacity → the gap forces a specific architectural move** (shard / replicate / cache / fan-out / object store). Worked example (web crawler): 20B pages / 7 days ≈ **33k pages/sec**; one machine is bandwidth-bound (~1 Gbps ÷ 1 MB/page ≈ 125/sec) → **hundreds of machines = a coordinated fleet**. 20B × 1 MB = **20 PB** → object store, not a database. **Senior move:** state soft per-node numbers as explicit assumptions and show the conclusion is *robust* to them, rather than asserting a precise figure.
+
+---
+**Q9.** What order-of-magnitude latency numbers should you have memorized to sanity-check a design?
+
+.
+.
+↳ **A:** L1 ~1 ns, RAM ref ~100 ns, SSD random read ~150 µs, same-datacenter round trip ~0.5 ms, HDD seek ~10 ms, cross-continent round trip ~150 ms. Redis GET ~0.5–1 ms; indexed DB query ~1–5 ms. *Why it matters:* they tell you instantly whether a latency budget is feasible — e.g., 10 sequential cross-region calls = ~1.5 s, which blows a 200 ms SLO, so you must parallelize or co-locate.
+
+---
+**Q10.** What single-node throughput ceilings let you size a fleet quickly?
+
+.
+.
+↳ **A:** Rules of thumb: app server ~1–10k req/s; Postgres/MySQL ~5–10k read QPS and ~1–5k write QPS; Redis ~100k ops/s; Cassandra ~10–15k writes/s per node; Kafka broker ~200k–500k msg/s; one WebSocket box ~50–100k concurrent connections. *Use:* required_QPS ÷ per-node_capacity = node count — if it's >1, the design is *forced* to shard or replicate, and that's your justification.
+
+---
+**Q11.** What quick-math shortcuts speed up estimation?
+
+.
+.
+↳ **A:** ~100k seconds/day (really 86,400). 1M req/day ≈ 12 QPS; 1B req/day ≈ 12k QPS. Peak ≈ 2–5× average. 1 KB × 1M = 1 GB. Storage = items/day × item_size × retention_days. *Why:* lets you go from a DAU figure to QPS, storage, and bandwidth in seconds, so estimation never stalls the interview.
 
 ---
 
-## 10. System Design — DDIA Ch 2–3
+## 10. System Design — Data Storage & Modeling
 
 **Q1.** You're choosing a data model for a new service. When would you pick a document store vs. a relational database vs. a graph database? Give a one-sentence use case for each.
 
 .
 .
-↳ **A:** Relational: structured, many-to-many relationships, strong consistency. Document: self-contained records, schema flexibility, tree-shaped data. Graph: pervasive many-to-many with traversals (social, knowledge).
+↳ **A:** Relational (Postgres, MySQL): structured data, many-to-many relationships, strong consistency, joins. Document (MongoDB, DynamoDB): self-contained records, schema flexibility, tree-shaped data. Graph (Neo4j): pervasive many-to-many traversals — social graphs, fraud, recommendations. *Tradeoff:* relational gives joins + integrity but a rigid schema; document trades joins for flexibility and forces you to denormalize for your access patterns; graph only wins when traversals dominate.
 
 ---
 **Q2.** Schema-on-read vs. schema-on-write tradeoff?
 
 .
 .
-↳ **A:** Schema-on-write (relational): enforced at insert — rigid but safe. Schema-on-read (document): interpretation at read time — flexible but pushes validation into application code.
+↳ **A:** Schema-on-write (relational): schema enforced at insert — rigid but bad data is rejected at the door. Schema-on-read (document): interpretation happens at read time — flexible but pushes validation into application code. *Where it shows up:* schema-on-read fits log/event ingestion where producers evolve independently; schema-on-write fits a transactional core where correctness can't be optional.
 
 ---
 **Q3.** Your interviewer asks you to compare LSM-trees and B-trees as storage engine internals. What's the fundamental difference in how each handles writes, what is write amplification, and how does it manifest in each?
 
 .
 .
-↳ **A:** **LSM-tree:** append-only writes into sorted segments (SSTables), merged in background compaction. High write throughput, better compression, worse tail read latency. **B-tree:** in-place updates in fixed-size pages within a balanced tree. Good read latency, mature, but writes rewrite full pages + WAL entries.
-
-**Write amplification** = bytes written to storage / bytes of application data written. In LSM, compaction repeatedly merges and rewrites segments — a single logical write may be rewritten 10–30× across compaction levels. In B-trees, each write rewrites a full page (e.g., 4KB for a small update) plus a WAL entry. LSM typically has higher write amp but better sequential I/O; B-tree has lower write amp but random I/O.
+↳ **A:** **LSM-tree** (Cassandra, ScyllaDB, RocksDB, LevelDB): append-only writes into sorted segments (SSTables), merged by background compaction — high write throughput, good compression, worse read tail. **B-tree** (Postgres, MySQL/InnoDB): in-place updates in fixed-size pages — good read latency, mature, but each write rewrites a full page + a WAL entry. **Write amplification** = bytes written to storage ÷ bytes of app data; LSM rewrites data 10–30× across compaction levels (high write amp but sequential I/O), B-trees rewrite a 4 KB page per small update (lower write amp but random I/O). *Where it shows up:* 'design a metrics pipeline at 1M writes/sec' → LSM, and the *why* is exactly this write-amp + sequential-I/O argument; read-heavy transactional (accounts, orders) → B-tree.
 
 ---
 **Q4.** When a partitioned database needs a secondary index, there are two strategies. What are they, and what does each optimize for (reads vs. writes)?
 
 .
 .
-↳ **A:** Local indexes (each partition indexes its own data; queries fan out to all partitions). Global indexes (partitioned separately; fast reads but writes are cross-partition, need async or distributed transactions).
+↳ **A:** Local indexes (each partition indexes its own data; reads fan out to all partitions). Global indexes (the index is partitioned separately by the indexed attribute; fast targeted reads but writes touch a different partition than the base row, needing async propagation or distributed transactions). *Where it shows up:* DynamoDB LSIs vs GSIs. *Tradeoff:* local optimizes writes (everything stays in one partition); global optimizes reads (no fan-out) at the cost of write complexity and eventual consistency on the index.
 
 ---
 **Q5.** Why are covering indexes a big deal?
 
 .
 .
-↳ **A:** They contain all columns for a query — engine never touches the primary row. Big read-latency win at cost of index size and write overhead.
+↳ **A:** A covering index contains every column a query needs, so the engine answers from the index alone and never touches the primary row (an 'index-only scan'). *Where it shows up:* a hot read path you must get under a few ms. *Tradeoff:* big read-latency win, paid for in extra index storage and slower writes (every covered column must be maintained in the index too).
 
 ---
 **Q6.** You're explaining to a junior engineer why OLTP and OLAP workloads need different storage engines. What are the key differences in their access patterns?
 
 .
 .
-↳ **A:** OLTP: small row count per query, keyed by PK, latency-sensitive. OLAP: large aggregate scans, analyst-driven. Different engines optimize each (row-oriented vs. column-oriented).
+↳ **A:** OLTP: small row count per query, keyed by primary key, latency-sensitive, high write rate (user-facing apps). OLAP: large aggregate scans over many rows, analyst-driven, throughput-oriented (dashboards, reporting). *Where it shows up:* OLTP → row-oriented Postgres/MySQL; OLAP → column-oriented ClickHouse / Redshift / BigQuery. *Tradeoff:* column stores compress and scan aggregates beautifully but are terrible at point lookups and single-row writes — never run analytics on your OLTP primary.
+
+---
+**Q7.** How do you decide SQL vs NoSQL for a new service?
+
+.
+.
+↳ **A:** Pick **SQL** for strong consistency, multi-row transactions, joins, ad-hoc/evolving queries, and moderate scale — accounts, orders, payments, anything where integrity matters. Pick **NoSQL** for massive write throughput, well-known access patterns, flexible schema, and horizontal scale — feeds, time-series, sessions, event data. *Tradeoff:* NoSQL buys scale by giving up joins, multi-key transactions, and ad-hoc querying — you must design the data model around your queries up front, and changing query patterns later is painful.
+
+---
+**Q8.** What are the common cache eviction policies and when do you pick each?
+
+.
+.
+↳ **A:** **LRU** (evict least-recently-used): the default, exploits temporal locality. **LFU** (evict least-frequently-used): keeps genuinely hot items through bursts, at the cost of more bookkeeping and slow adaptation to changing popularity. **TTL** (expire by time): for time-bounded data — sessions, tokens, rate-limit windows. *Tradeoff:* LRU is simple but a large scan can flush your hot set ('cache pollution'); LFU resists that but reacts slowly when what's popular changes.
+
+---
+**Q9.** How should a system handle large media (images, video, files)?
+
+.
+.
+↳ **A:** Store the bytes in **object storage** (S3/GCS) and keep only a reference/key in your database. Have clients upload via **pre-signed URLs** — the client uploads directly to S3 and your servers never proxy the bytes. *Where it shows up:* chat attachments, YouTube uploads, Instagram. *Tradeoff:* object storage is cheap, durable, and CDN-friendly but has high per-object latency and no query ability — it's a key→blob store, so all searchable metadata must live in your DB.
+
+---
+**Q10.** How does full-text search work, and what's the tradeoff of adding it?
+
+.
+.
+↳ **A:** Full-text search is built on an **inverted index**: term → list of documents containing it (the core of Elasticsearch / Lucene), enabling fast ranked and fuzzy matching. *Where it shows up:* product search, log search, autocomplete. *Tradeoff:* it's a denormalized *copy* of your data that lags the source (eventual consistency) and costs storage + write amplification — great as a search layer, never as your system of record.
 
 ---
 
-## 11. System Design — Replication, Partitioning, Consistency, CAP
+## 11. System Design — Replication, Partitioning & Consistency
 
 **Q1.** Name the three main replication architectures for distributed databases. For each, state in one sentence how writes flow and what the key tradeoff is.
 
@@ -1329,7 +1416,7 @@ How does "Word Search II" use a trie?
 
 .
 .
-↳ **A:** Time between a write on leader and visibility on followers. Causes violations of read-your-writes, monotonic reads, and consistent-prefix guarantees.
+↳ **A:** Replication lag is the time between a write committing on the leader and becoming visible on followers. *Where it shows up:* it's the root cause of read-your-writes, monotonic-read, and consistent-prefix anomalies (next card is the classic example). *Tradeoff:* synchronous replication eliminates lag but adds write latency and reduces availability (a slow follower stalls writes); asynchronous replication is fast and available but exposes these anomalies.
 
 ---
 **Q3.** A user updates their profile photo but refreshes and still sees the old one. What consistency guarantee was violated, and name two infrastructure-level fixes.
@@ -1350,38 +1437,41 @@ How does "Word Search II" use a trie?
 
 .
 .
-↳ **A:** One partition gets disproportionate traffic. Mitigations: salt the key with a random prefix (spreads writes; reads need fan-out), application-level sharding of hot keys, or caching in front.
+↳ **A:** One partition gets disproportionate traffic. *Where it shows up:* a celebrity user, a viral/trending key, or a monotonically-increasing timestamp key that funnels all writes to the newest partition. *Mitigations & tradeoff:* salt the key with a random prefix (spreads writes, but reads now need scatter-gather), application-level splitting of the hot key, or a cache in front (adds an invalidation problem). Each trades read complexity or staleness for write spread.
 
 ---
 **Q6.** CAP in practical engineering terms?
 
 .
 .
-↳ **A:** During a network partition, choose between Consistency (reject requests that can't see the latest write) and Availability (answer with potentially stale data). Without a partition, you generally get both. Most systems choose per-request or per-operation.
+↳ **A:** During a network partition you must choose Consistency (reject requests that can't see the latest write) or Availability (answer with possibly-stale data); with no partition you generally get both. *Where it shows up:* a checkout/inventory path should pick CP (reject rather than oversell); a social feed should pick AP (serve stale, stay up). *Tradeoff:* the choice is per-operation, not system-wide — you decide per request whether a wrong answer or no answer is worse.
 
 ---
 **Q7.** An interviewer asks: 'What's the difference between linearizability and serializability?' These are commonly confused. Distinguish them clearly.
 
 .
 .
-↳ **A:** Linearizability: single-object, real-time ordering — each op appears to take effect at some instant between its start and end. Serializability: multi-object transactions appear to execute in some serial order (not necessarily real-time).
+↳ **A:** **Linearizability:** single-object, real-time ordering — every read sees the most recent completed write, as if there were one copy. **Serializability:** multi-object transactions appear to run in *some* serial order (not necessarily real-time). *Where it shows up:* you need linearizability for a distributed lock / leader-election / config store (etcd) where a read must see the latest write; you need serializability for a bank transfer or inventory checkout where several rows must move as one consistent unit. *Tradeoff:* linearizability costs latency (every op coordinates through consensus); serializable isolation costs throughput (locking or abort-and-retry under contention) — which is why systems deliberately drop to snapshot isolation or eventual consistency where they can.
 
 ---
 **Q8.** What does quorum (R + W > N) guarantee?
 
 .
 .
-↳ **A:** At least one node responding to a read overlaps with the last successful write. In practice, still not linearizable without additional mechanisms (read repair, anti-entropy, no concurrent writes).
+↳ **A:** Quorum (R + W > N) guarantees a read set overlaps the last successful write set, so at least one responding replica has the latest value. *Where it shows up:* Dynamo-style stores (Cassandra, DynamoDB) expose R and W as tunable knobs — R=W=1 is fast and loose, R+W>N is consistent-ish. *Tradeoff:* overlap guarantees you *see* the latest successful write, but it is NOT linearizable — concurrent writes and lack of real-time ordering still need read-repair, anti-entropy, or version reconciliation.
 
 ---
-**Q9.** What is split-brain in a replicated system, why is it dangerous, and how does a proper leader-election protocol (e.g., Raft) prevent it?
+
+## 12. System Design — Coordination & Transactions
+
+**Q1.** What is split-brain in a replicated system, why is it dangerous, and how does a proper leader-election protocol (e.g., Raft) prevent it?
 
 .
 .
-↳ **A:** Two nodes simultaneously believe they're leader. Prevention: fencing tokens (monotonically increasing epoch numbers), distributed consensus (Raft/Paxos) requiring majority to elect.
+↳ **A:** Split-brain = two nodes simultaneously believe they're leader, so both accept writes and diverge/corrupt data. *Where it shows up:* leader failover in any replicated store — an old leader that 'comes back' after a network blip is the danger. *Fix & tradeoff:* fencing tokens (a monotonically increasing epoch that storage rejects if stale) plus majority-quorum election (Raft/Paxos) prevent it — at the cost of needing an odd node count and a live majority to make any progress.
 
 ---
-**Q10.** When would you reach for a consensus protocol like Raft in a system design, what does it give you, and what does it cost?
+**Q2.** When would you reach for a consensus protocol like Raft in a system design, what does it give you, and what does it cost?
 
 .
 .
@@ -1392,28 +1482,77 @@ How does "Word Search II" use a trie?
 **What it costs:** writes require a majority round-trip (latency floor = network RTT to the slowest quorum member). Throughput limited to what a single leader can sequence. Requires an odd number of nodes (3 or 5 typical); 2 of 3 must be up for progress. Not suitable for high-throughput data planes — use it for control planes and coordination.
 
 ---
-**Q11.** What is a saga, and when over distributed transactions?
+**Q3.** What is a saga, and when over distributed transactions?
 
 .
 .
-↳ **A:** A long-running business transaction decomposed into local transactions with compensating actions on failure. Use when cross-service 2PC is impractical (microservices, external APIs). Tradeoff: availability and scale, at the cost of atomicity.
+↳ **A:** A saga is a long-running business transaction split into local transactions, each with a compensating action to undo it on failure. *Where it shows up:* e-commerce checkout across order / inventory / payment services — reserve inventory → charge card → confirm order, releasing inventory if payment fails. *Tradeoff:* buys availability and scale over cross-service 2PC, but you lose atomicity — intermediate states are visible, and every compensation must be idempotent and itself reliable.
 
 ---
-**Q12.** Idempotency keys — why do they matter?
+**Q4.** Idempotency keys — why do they matter?
 
 .
 .
 ↳ **A:** Retries can cause duplicate writes. An idempotency key lets the server deduplicate: first request creates a record keyed by the ID; retries observe the existing record and return the original result. Essential for any write API that callers may retry (payments, order creation).
 
 ---
+**Q5.** What is two-phase commit (2PC), and why do microservices usually avoid it?
 
-## 12. System Design — Common design patterns & primitives
+.
+.
+↳ **A:** A coordinator runs two rounds: 'prepare' (every participant votes and locks resources) then 'commit' (if all voted yes) or 'abort'. It gives true atomicity across nodes. *Where it shows up:* a single distributed transaction that must be strictly all-or-nothing. *Tradeoff:* it's **blocking** — if the coordinator dies after participants vote 'prepare', they hold locks indefinitely, killing availability. That fragility is exactly why microservices prefer sagas + idempotency over 2PC.
+
+---
+**Q6.** How do you implement a distributed lock, and what's the tradeoff between the two common approaches?
+
+.
+.
+↳ **A:** **Redis SETNX + TTL:** fast and simple, but best-effort — the TTL can expire while the holder is still working, letting two holders overlap; mitigate with fencing tokens. **ZooKeeper / etcd:** consensus-backed ephemeral nodes, strongly correct, but slower and heavier. *Where it shows up:* leader election, 'only one worker may process this job.' *Tradeoff:* Redis trades correctness for latency; ZK/etcd trade latency for correctness — choose by how bad a double-acquire actually is.
+
+---
+**Q7.** Why can't you order distributed events by wall-clock time, and what do you use instead?
+
+.
+.
+↳ **A:** Clock skew across machines means timestamps can't reliably order events. **Lamport clocks** give a total order consistent with causality (if A caused B, A's counter < B's). **Vector clocks** go further and *detect concurrent* (conflicting) writes. *Where it shows up:* Dynamo-style conflict detection, collaborative editing, event ordering. *Tradeoff:* vector clocks grow with the number of writers and need pruning; many systems punt to last-write-wins — simpler, but it silently drops concurrent updates.
+
+---
+**Q8.** In a payment system like Stripe, what is a PaymentIntent and how does it differ from a PaymentAttempt? Walk through the full status lifecycle.
+
+.
+.
+↳ **A:** A PaymentIntent records what the customer intends to pay — created when the merchant initiates, holds amount/currency/description, status = 'created'. No card processor call yet. A PaymentAttempt is the actual card charge against that intent — has its own processor result, status, and timestamp. Separation lets you retry failed charges without losing context. Status lifecycle: created → authorized (funds reserved, not moved) → pending (processing) → settled (bank completed transfer) OR failed at any stage.
+
+---
+**Q9.** In a payment system, where must private keys be stored and why? How do you achieve tamper-proof auditability — what's wrong with application-level audit logs?
+
+.
+.
+↳ **A:** Private keys: stored in a Hardware Security Module (HSM) — tamper-resistant hardware where the key never exists in plaintext outside it. Without HSM, server compromise exposes all encrypted card data. Auditability: application-managed audit logs can go out of sync with the main DB if a bug or partial failure skips the log write. Correct pattern: Change Data Capture (CDC) at the database level — automatically emits every change to an immutable event stream. The audit trail is derived directly from the DB and cannot be bypassed by application code.
+
+---
+**Q10.** For a payment event stream, what should the partition key be? Why NOT a composite of merchant ID + transaction ID?
+
+.
+.
+↳ **A:** Partition key = transaction ID alone. All events for a single payment must land on the same partition to guarantee ordering (created → authorized → settled). If you mix merchant ID into the partition key, events for the same transaction could split across partitions, breaking ordering guarantees. Merchant ID can be used for load spreading at a higher routing level (e.g., which cluster handles the merchant), but not in the event partition key.
+
+---
+**Q11.** When a payment call to an external processor times out, how should you handle it? Why is treating it as 'failed' dangerous?
+
+.
+.
+↳ **A:** Treat timeouts as pending/uncertain — NOT failed. The processor may still complete the charge after a network timeout. If you mark it failed and retry, the customer gets double-charged. Correct approach: (1) assign an idempotency key to every payment attempt so retries are safe, (2) use optimistic locking on the payment record to prevent conflicting updates when retries and processor callbacks race to update the same record simultaneously.
+
+---
+
+## 13. System Design — Caching, CDN & Hashing
 
 **Q1.** When do you need a CDN?
 
 .
 .
-↳ **A:** For static assets and cacheable responses: reduces origin load, lowers latency via edge PoPs, helps with DDoS absorption and global audiences.
+↳ **A:** A CDN caches static assets and cacheable responses at edge PoPs — cutting origin load and latency and absorbing some DDoS. *Where it shows up:* images, JS/CSS, video segments, and read-heavy cacheable API responses for a global audience. *Tradeoff / when NOT:* it adds a layer that doesn't help highly dynamic or personalized responses, and cross-PoP cache invalidation is the genuinely hard part — stale edge content is the classic CDN bug.
 
 ---
 **Q2.** Cache placement — client, CDN, app, database? Tradeoffs?
@@ -1427,190 +1566,202 @@ How does "Word Search II" use a trie?
 
 .
 .
-↳ **A:** Write-through: writes go to cache and DB together (consistent, slower). Write-back: write to cache, flush to DB later (fast, risk of loss on crash). Write-around: writes bypass cache, go straight to DB (avoids cache churn for write-heavy but rarely-read data).
+↳ **A:** Write-through: write cache + DB together (consistent, slower writes). Write-back: write cache, flush to DB later (fast, risk of loss on crash). Write-around: writes bypass the cache straight to the DB (avoids cache churn for write-heavy, rarely-read data). *Where it shows up:* write-through for read-heavy data needing consistency (profiles); write-back for high-volume tolerant-of-loss counters (views, metrics); write-around for write-once-read-rarely (logs). *Tradeoff:* the axis is consistency vs write latency vs crash-durability — pick per data class.
 
 ---
-**Q4.** Message queue vs. pub/sub vs. event log — which for which job?
+**Q4.** Consistent hashing — one sentence and why it matters for sharding?
+
+.
+.
+↳ **A:** Hash keys and nodes onto a ring; each key is owned by the next node clockwise, so adding/removing a node only rehomes adjacent keys instead of remapping everything. *Where it shows up:* sharding a distributed cache or a Dynamo-style KV ring, and sticky routing in load balancers. *Tradeoff:* without virtual nodes you get load skew; virtual nodes smooth it out at the cost of more routing metadata.
+
+---
+**Q5.** Bloom filter — guarantees and when to use?
+
+.
+.
+↳ **A:** 'Definitely not in the set' is reliable; 'maybe in the set' has a tunable false-positive rate — an O(1), space-efficient membership test. *Where it shows up:* crawler URL-dedup, the LSM/Bigtable read path (skip SSTables that provably can't hold the key), and filtering cache misses before an expensive lookup. *Tradeoff:* tiny and fast, but standard Bloom filters can't delete, and a 'maybe present' still needs the real lookup to confirm.
+
+---
+
+## 14. System Design — Messaging, Streaming & Real-time
+
+**Q1.** Message queue vs. pub/sub vs. event log — which for which job?
 
 .
 .
 ↳ **A:** Queue (SQS, RabbitMQ): one consumer processes each message, ordering per queue. Pub/sub: every subscriber gets a copy (fan-out). Event log (Kafka): durable replayable log, consumer groups, per-partition ordering. Choose based on replay, fan-out, ordering, and retention needs.
 
 ---
-**Q5.** How does a rate limiter typically work?
+**Q2.** What is the outbox pattern?
 
 .
 .
-↳ **A:** Token bucket (allow bursts up to bucket size, refilled at rate r) or leaky bucket (smooths traffic). Implemented in Redis via INCR + EXPIRE or Lua script for atomicity. Shard by user key for distributed fairness.
-
----
-**Q6.** Consistent hashing — one sentence and why it matters for sharding?
-
-.
-.
-↳ **A:** Hash keys and nodes onto a ring; a key is owned by the nearest clockwise node. Adding/removing a node only rehomes adjacent keys — not all keys. Virtual nodes smooth out skew.
+↳ **A:** Write the domain change AND the outgoing event in the *same* local DB transaction (to an 'outbox' table); a separate relay reads the outbox and publishes to the bus. *Where it shows up:* 'update the order AND publish order-placed atomically' — the dual-write problem. *Tradeoff:* solves dual-write without 2PC, but adds a relay (often CDC/Debezium) and is at-least-once, so consumers must dedupe.
 
 ---
-**Q7.** Bloom filter — guarantees and when to use?
-
-.
-.
-↳ **A:** "Definitely not in set" is reliable; "maybe in set" has a tunable false-positive rate. Use in front of expensive lookups (disk, remote KV) to skip confirmed misses at O(1) cost.
-
----
-**Q8.** You're designing a social media newsfeed. Compare the push model (fan-out on write) vs. pull model (fan-out on read) — how does each work, and what breaks at scale? What's the standard hybrid answer?
-
-.
-.
-↳ **A:** Push: write to every follower's timeline at post time — fast reads, huge write amplification for celebrities. Pull: merge from each followee at read time — cheap writes, expensive hot reads. Hybrid (push for most, pull for celebrities) is the standard answer.
-
----
-**Q9.** What is the outbox pattern?
-
-.
-.
-↳ **A:** Write domain changes AND outgoing events in the same local DB transaction (to an "outbox" table). A separate relay reads the outbox and publishes to the message bus. Solves "update DB and publish event atomically" without distributed transactions.
-
----
-**Q10.** How do you design for graceful degradation?
-
-.
-.
-↳ **A:** Identify critical vs. non-critical paths. Non-critical paths fail closed (hide feature, serve stale, queue for later). Tools: circuit breakers, bulkheads, timeouts, fallbacks. The product must define "what's good enough."
-
----
-**Q11.** Compare blue/green deployments and canary deployments. How does each work, what does each optimize for, and when would you choose one over the other?
-
-.
-.
-↳ **A:** Blue/green: two full environments; cut traffic over atomically (fast rollback, doubles infra). Canary: gradually shift traffic % to new version (safer, slower, needs good metrics + automated rollback).
-
----
-**Q12.** Walk through the 6 phases of a system design interview in order. What do you cover in each phase?
-
-.
-.
-↳ **A:** (1) Requirements (functional + non-functional). (2) Back-of-envelope estimation (QPS, storage, bandwidth). (3) API design. (4) Data model. (5) High-level diagram. (6) Deep-dive into 1–2 hard components; discuss bottlenecks and tradeoffs.
-
----
-**Q13.** At the start of any system design interview, there are two categories of clarifying questions you should always ask before designing anything. What are they?
-
-.
-.
-↳ **A:** (1) Scale: DAU, read/write ratio, data retention? (2) Consistency expectations: can this tolerate eventual consistency anywhere?
-
----
-**Q14.** Compare the main load balancing strategies — round-robin, least connections, and consistent hashing. When would you pick each in a system design?
-
-.
-.
-↳ **A:** **Round-robin:** simplest, works when all servers are identical and requests have similar cost. Fails when backends have uneven capacity or requests vary widely in weight. **Least connections:** routes to the server with the fewest active connections — naturally adapts to slow servers and heterogeneous request costs. Good default for stateless services. **Consistent hashing:** routes by request key (e.g., user ID) — ensures the same key hits the same server. Needed for stateful services, sticky sessions, or caching tiers where locality matters. Use with virtual nodes to smooth out skew.
-
----
-**Q15.** Your interviewer says 'tell me how you'd make this system observable.' What are the three pillars of observability, and what does each one help you diagnose?
-
-.
-.
-↳ **A:** **Metrics** (counters, gauges, histograms): answer 'what is happening right now?' — latency percentiles, error rates, queue depths, saturation. Alert on these. **Logs** (structured, per-event records): answer 'what happened to this specific request?' — debug individual failures, audit trails. Expensive at scale; use sampling or log levels. **Distributed traces** (spans across services): answer 'where did this request spend its time?' — diagnose latency in multi-service call chains, find the bottleneck service. Tools: Prometheus/Grafana for metrics, ELK/Datadog for logs, Jaeger/Zipkin for traces. In a design interview, mention all three and note that metrics are cheapest to query, traces are most useful for debugging fan-out.
-
----
-**Q16.** What is back-pressure, and why is it better than unbounded queuing?
+**Q3.** What is back-pressure, and why is it better than unbounded queuing?
 
 .
 .
 ↳ **A:** **Back-pressure** means a downstream system signals upstream to slow down when it's overwhelmed, rather than accepting work it can't handle. Without it, an overwhelmed service queues unboundedly → memory exhaustion → crash → cascading failure. **Mechanisms:** return HTTP 429/503 with retry-after headers, use bounded queues that reject when full, TCP flow control, reactive streams. **Design principle:** it's better to reject work at the edge (where the caller can retry or degrade gracefully) than to accept it and fail silently deep in the stack. Pairs with circuit breakers: back-pressure is the producer-side control, circuit breakers are the consumer-side control.
 
 ---
-
-**Q17.** When you say "WebSockets" in a design, what must you define beyond mentioning the upgrade? Give a concrete example for a chat system.
+**Q4.** When you say 'WebSockets' in a design, what must you define beyond mentioning the upgrade? Give a concrete example for a chat system.
 
 .
 .
-↳ **A:** Define the actual event contract: named events with specific fields. Example: event `newMessage` with fields chatId, senderId, content, timestamp, attachments. Also define reconnection behavior (client sends last-seen offset, server replays missed messages). Just saying "use WebSockets" without the contract is incomplete.
+↳ **A:** Define the actual event contract: named events with specific fields. Example: event 'newMessage' with fields chatId, senderId, content, timestamp, attachments. Also define reconnection behavior (client sends last-seen offset, server replays missed messages). Just saying 'use WebSockets' without the contract is incomplete.
 
 ---
-
-**Q18.** In a messaging system, how do you guarantee offline message delivery? What data structure tracks what a user has missed, and what's the reconnect flow?
+**Q5.** In a messaging system, how do you guarantee offline message delivery? What data structure tracks what a user has missed, and what's the reconnect flow?
 
 .
 .
-↳ **A:** Store a `last_delivered_message_id` (offset) per user per chat. On reconnect: client sends its offset → server fetches all messages after that offset from durable storage → streams them to the client. Push notifications are just hints — they can be dropped. The offset + persistent storage is what guarantees delivery, not the notification.
+↳ **A:** Store a last_delivered_message_id (offset) per user per chat. On reconnect: client sends its offset → server fetches all messages after that offset from durable storage → streams them to the client. Push notifications are just hints — they can be dropped. The offset + persistent storage is what guarantees delivery, not the notification.
 
 ---
-
-**Q19.** How should a chat system handle media attachments (images, video)? Walk through the upload and send flow.
+**Q6.** How should a chat system handle media attachments (images, video)? Walk through the upload and send flow.
 
 .
 .
 ↳ **A:** Client requests a pre-signed upload URL from the API server → uploads the file directly to blob storage (S3/GCS) → sends a message containing only the blob key/URL. The message service never touches the binary data. This keeps the DB lean (only stores references) and avoids overloading the message path with large payloads.
 
 ---
-
-**Q20.** You have N WebSocket servers and need to deliver a message to a user connected to one of them. How does the message reach the right server? What problems arise at scale and how do you mitigate them?
+**Q7.** You have N WebSocket servers and need to deliver a message to a user connected to one of them. How does the message reach the right server? What problems arise at scale and how do you mitigate them?
 
 .
 .
 ↳ **A:** PubSub layer: each WS server subscribes to topics for its connected users. Message is published to the recipient's topic → only the right server receives and forwards it. At scale, subscription churn is the problem. Mitigations: (1) single multiplexed connection per WS server to the broker (not one per user), (2) batch subscribe/unsubscribe ops, (3) grace period before unsubscribing on disconnect so brief reconnects don't re-subscribe.
 
 ---
-
-**Q21.** How does supporting multiple devices per user change a messaging system's design? What needs to be per-device instead of per-user?
+**Q8.** How does supporting multiple devices per user change a messaging system's design? What needs to be per-device instead of per-user?
 
 .
 .
 ↳ **A:** Each device is a separate client session. The User Activity Service stores all active device sessions per user. Fan-out pushes to every connected device. Delivery tracking (offsets) must be per-device, not per-user — one device may be online while another is offline, and each needs independent catchup state on reconnect.
 
 ---
+**Q9.** Batch vs stream processing — when each, and what's hard about streaming?
 
-**Q22.** Explain exactly how token bucket rate limiting works. What are the moving parts, and what makes it good for API rate limiting? What is it NOT?
+.
+.
+↳ **A:** Batch (MapReduce/Spark): process a bounded dataset on a schedule — simple, high-throughput, high-latency (minutes–hours). Stream (Flink/Kafka Streams): process unbounded events continuously — low latency, but windowing and exactly-once are hard. **Lambda architecture** runs both (batch for accuracy, stream for freshness); **Kappa** is stream-only. *Where it shows up:* metrics/analytics, ad-click aggregation. *Tradeoff:* exactly-once in streaming costs coordination (idempotent sinks or transactional commits); batch is simpler but you wait for the next run.
+
+---
+
+## 15. System Design — Networking & Load Balancing
+
+**Q1.** Compare the main load balancing strategies — round-robin, least connections, and consistent hashing. When would you pick each in a system design?
+
+.
+.
+↳ **A:** **Round-robin:** simplest, fine when servers are identical and requests cost the same. **Least connections:** routes to the fewest-active-connection server — adapts to slow servers and uneven request cost; a good default for stateless services. **Consistent hashing:** routes by request key (user ID) so the same key hits the same server — needed for sticky sessions and caching tiers. Also know the layer: **L4** load balancers route by IP/port (fast, no payload inspection — NLB, HAProxy-TCP) vs **L7** which route by HTTP path/header/cookie and enable canary + sticky sessions (ALB, Nginx, Envoy) at higher CPU cost.
+
+---
+**Q2.** TCP vs UDP — when each?
+
+.
+.
+↳ **A:** TCP: connection-oriented, reliable, ordered, with flow/congestion control — the default when correctness matters (HTTP, RPC, databases). UDP: connectionless, no delivery or ordering guarantees, minimal overhead — for latency-critical, loss-tolerant traffic (video/voice, DNS, gaming, and QUIC's substrate). *Tradeoff:* TCP's guarantees cost head-of-line blocking and handshake latency; UDP is fast but you re-implement whatever reliability you actually need on top.
+
+---
+**Q3.** What changed across HTTP/1.1, HTTP/2, and HTTP/3?
+
+.
+.
+↳ **A:** HTTP/1.1: one in-flight request per connection (head-of-line blocking), kept alive. HTTP/2: multiplexes many streams over one TCP connection + header compression. HTTP/3: the same multiplexing over **QUIC (UDP)**, removing TCP-level head-of-line blocking and cutting connection-setup latency. *Where it shows up:* HTTP/2+ matters for high-fan-out pages and mobile. *Tradeoff:* HTTP/2 still suffers TCP HoL blocking under packet loss; HTTP/3 fixes it but is newer and UDP-based (some networks throttle/block it).
+
+---
+**Q4.** REST vs gRPC — when would an infra/platform team pick each?
+
+.
+.
+↳ **A:** REST/JSON over HTTP: human-readable, ubiquitous, browser-friendly — best for public/external APIs. gRPC: binary Protobuf over HTTP/2, schema-enforced, supports streaming and code generation — best for internal service-to-service. *Where it shows up:* infra/microservices lean gRPC for performance + typed contracts. *Tradeoff:* gRPC is faster and type-safe but harder to debug, not natively browser-friendly, and couples you to Protobuf schemas.
+
+---
+**Q5.** Short polling vs long polling vs SSE vs WebSocket — how do you choose?
+
+.
+.
+↳ **A:** Short polling: client re-requests on an interval (simple, wasteful). Long polling: server holds the request open until data arrives (less waste, still HTTP). SSE: a one-way server→client stream over a single HTTP connection (auto-reconnect built in). WebSocket: full-duplex persistent connection. *Where it shows up:* notifications/live feeds → SSE; chat/collaboration/gaming → WebSocket. *Tradeoff:* WebSockets are the most capable but are stateful — connection affinity makes them harder to scale (you need a pub/sub layer to route messages to the right server); SSE is far simpler when you only push one direction.
+
+---
+**Q6.** How is DNS used as a load-balancing / failover layer, and what's its limitation?
+
+.
+.
+↳ **A:** Beyond name→IP resolution, DNS is a traffic-steering layer: weighted, latency-based, or geo records (e.g., Route 53) send users to the nearest or healthiest region. *Where it shows up:* global traffic distribution and coarse failover. *Tradeoff:* DNS responses are cached for their TTL, so changes propagate slowly — it's poor for fast failover, which is why you pair geo-DNS with health-checked L7 load balancers for the last hop.
+
+---
+
+## 16. System Design — Reliability, Observability, Deployment & Rate Limiting
+
+**Q1.** How do you design for graceful degradation?
+
+.
+.
+↳ **A:** Identify critical vs non-critical paths; non-critical paths fail closed — hide the feature, serve stale, or queue for later — instead of failing the whole request. *Where it shows up:* if the recommendations service is down, the feed still renders (drop the rec rail / serve a cached one) rather than erroring the page. *Tools:* circuit breakers, bulkheads, timeouts, fallbacks. *Tradeoff:* the product must define 'good enough' per path, and every fallback is another code path that needs testing.
+
+---
+**Q2.** Compare blue/green deployments and canary deployments. How does each work, what does each optimize for, and when would you choose one over the other?
+
+.
+.
+↳ **A:** Blue/green: two full environments; cut traffic over atomically (fast rollback, doubles infra). Canary: gradually shift traffic % to new version (safer, slower, needs good metrics + automated rollback).
+
+---
+**Q3.** Your interviewer says 'tell me how you'd make this system observable.' What are the three pillars of observability, and what does each one help you diagnose?
+
+.
+.
+↳ **A:** **Metrics** (counters, gauges, histograms): answer 'what is happening right now?' — latency percentiles, error rates, queue depths, saturation. Alert on these. **Logs** (structured, per-event records): answer 'what happened to this specific request?' — debug individual failures, audit trails. Expensive at scale; use sampling or log levels. **Distributed traces** (spans across services): answer 'where did this request spend its time?' — diagnose latency in multi-service call chains, find the bottleneck service. Tools: Prometheus/Grafana for metrics, ELK/Datadog for logs, Jaeger/Zipkin for traces. In a design interview, mention all three and note that metrics are cheapest to query, traces are most useful for debugging fan-out.
+
+---
+**Q4.** Define SLI, SLO, and error budget — and how they drive engineering decisions.
+
+.
+.
+↳ **A:** SLI = a measured signal of health (p99 latency, success rate). SLO = the target for it (99.9% of requests < 200 ms). Error budget = 1 − SLO (0.1% may fail) — you 'spend' it on releases and risk; when it's exhausted you freeze features and fix reliability. *Where it shows up:* every production service — it turns 'how reliable?' into a number both eng and product agree on. *Tradeoff:* each extra nine costs roughly an order of magnitude more effort, so SLOs should match real user need, not 100%.
+
+---
+**Q5.** What problem do circuit breakers and bulkheads solve, and what's the cost?
+
+.
+.
+↳ **A:** **Circuit breaker:** after N failures to a dependency, 'open' and fail fast (skip the call) for a cooldown, then probe to close — stops you from hammering a downed service and prevents cascading failure. **Bulkhead:** isolate resources per dependency (separate thread pools / connection limits) so one slow dependency can't exhaust everything. *Where it shows up:* any service with downstream dependencies. *Tradeoff:* both add tuning and complexity, and an over-eager breaker can shed load that would actually have succeeded.
+
+---
+**Q6.** How does a rate limiter typically work?
+
+.
+.
+↳ **A:** Token bucket (allow bursts up to bucket size, refilled at rate r) or leaky bucket (smooths traffic). Implemented in Redis via INCR + EXPIRE or Lua script for atomicity. Shard by user key for distributed fairness.
+
+---
+**Q7.** Explain exactly how token bucket rate limiting works. What are the moving parts, and what makes it good for API rate limiting? What is it NOT?
 
 .
 .
 ↳ **A:** Each client gets a bucket with a fixed token capacity. Tokens refill at a steady rate. Each request consumes one token; if the bucket is empty, the request is denied (HTTP 429). Good for APIs because it allows short bursts (up to bucket capacity) while enforcing a sustained rate. It is NOT traffic shaping — token bucket makes allow/deny decisions. Traffic shaping (leaky bucket with a queue) delays and buffers requests instead of rejecting them. Don't conflate these.
 
 ---
-
-**Q23.** On a latency-critical hot path like a rate limiter check, what's the single most important optimization for the counter store? Why?
+**Q8.** On a latency-critical hot path like a rate limiter check, what's the single most important optimization for the counter store? Why?
 
 .
 .
 ↳ **A:** Combine the counter read and increment into a single atomic operation — Redis INCR or a Lua script. This avoids two separate round trips (read then write) and prevents race conditions under concurrent requests. Also co-locate gateways and Redis in the same region/AZ to minimize network latency on every check. Target under 5ms per rate limit check.
 
 ---
-
-**Q24.** When rate limit rules change, how do all gateway instances learn about the update? What are the two strategies and when do you pick each?
+**Q9.** When rate limit rules change, how do all gateway instances learn about the update? What are the two strategies and when do you pick each?
 
 .
 .
 ↳ **A:** Polling with short TTL: each gateway periodically fetches rules from the config store. Simple to operate, but introduces propagation delay (up to TTL). Push notifications: a config service pushes updates to all gateways immediately. More complex but needed for emergency throttling where delay is unacceptable. Most systems use polling as the baseline and add a push channel for urgent overrides.
 
-**Q25.** In a payment system like Stripe, what is a PaymentIntent and how does it differ from a PaymentAttempt? Walk through the full status lifecycle.
-
-.
-.
-↳ **A:** A PaymentIntent records what the customer intends to pay — created when the merchant initiates, holds amount/currency/description, status = "created". No card processor call yet. A PaymentAttempt is the actual card charge against that intent — has its own processor result, status, and timestamp. Separation lets you retry failed charges without losing context. Status lifecycle: created → authorized (funds reserved, not moved) → pending (processing) → settled (bank completed transfer) OR failed at any stage.
-
-**Q26.** In a payment system, where must private keys be stored and why? How do you achieve tamper-proof auditability — what's wrong with application-level audit logs?
-
-.
-.
-↳ **A:** Private keys: stored in a Hardware Security Module (HSM) — tamper-resistant hardware where the key never exists in plaintext outside it. Without HSM, server compromise exposes all encrypted card data. Auditability: application-managed audit logs can go out of sync with the main DB if a bug or partial failure skips the log write. Correct pattern: Change Data Capture (CDC) at the database level — automatically emits every change to an immutable event stream. The audit trail is derived directly from the DB and cannot be bypassed by application code.
-
-**Q27.** For a payment event stream, what should the partition key be? Why NOT a composite of merchant ID + transaction ID?
-
-.
-.
-↳ **A:** Partition key = transaction ID alone. All events for a single payment must land on the same partition to guarantee ordering (created → authorized → settled). If you mix merchant ID into the partition key, events for the same transaction could split across partitions, breaking ordering guarantees. Merchant ID can be used for load spreading at a higher routing level (e.g., which cluster handles the merchant), but not in the event partition key.
-
-**Q28.** When a payment call to an external processor times out, how should you handle it? Why is treating it as "failed" dangerous?
-
-.
-.
-↳ **A:** Treat timeouts as pending/uncertain — NOT failed. The processor may still complete the charge after a network timeout. If you mark it failed and retry, the customer gets double-charged. Correct approach: (1) assign an idempotency key to every payment attempt so retries are safe, (2) use optimistic locking on the payment record to prevent conflicting updates when retries and processor callbacks race to update the same record simultaneously.
-
 ---
 
-## 13. Linked List
+## 17. Linked List
 
 **Q1.** Slow/fast pointer — what 3 problem classes does it solve?
 
@@ -1668,8 +1819,29 @@ How does "Word Search II" use a trie?
 ↳ **A:** (1) Forgetting to null-terminate the new tail when splitting (creates a cycle). (2) Losing the head reference when reversing — always return `prev`, not `head`. (3) Off-by-one in the n+1-gap problems. (4) Modifying `node.next` before saving the original `next`. (5) Skipping the dummy head and writing duplicated 'first iteration' code.
 
 ---
+**Q9.** *Copy List with Random Pointer (LC 138): deep-copy a list where each node has `next` and a `random` pointer to any node or null.* What's the trick for the random pointers, and the O(1)-space version?
 
-## 14. Heap / Priority Queue
+.
+.
+↳ **A:** The catch: a node's `random` may point to a node you haven't cloned yet. **(1) Hash map (O(n) space):** pass 1 clones every node into `map[orig] = clone`; pass 2 wires `clone.next = map[orig.next]` and `clone.random = map[orig.random]`. **(2) Interweaving (O(1) extra):** insert each clone right after its original (A→A'→B→B'…), so `A'.random = A.random.next` (the clone sits right after the original's random target); then unweave into two lists. O(n) either way.
+
+---
+**Q10.** *Find the Duplicate Number (LC 287): array of n+1 ints in [1,n], exactly one value repeated; find it without modifying the array, O(1) space.* Why is this a cycle problem and what's the exact Floyd's setup?
+
+.
+.
+↳ **A:** Treat the array as a function `i → nums[i]`: values in [1,n] over n+1 slots force a repeat, so following `x = nums[x]` enters a **cycle whose entrance is the duplicate**. **Floyd's:** phase 1 — `slow = nums[slow]`, `fast = nums[nums[fast]]` until they meet. Phase 2 — reset `slow` to the **start (index 0)**, advance both by one step until they meet; that node is the cycle entrance = the duplicate. O(n) time, O(1) space, array untouched. *(Flagged F13 — gotchas: start from index 0, return the entrance not the meeting point.)*
+
+---
+**Q11.** *LFU Cache (LC 460): get/put in O(1); evict the least-frequently-used, breaking ties by least-recently-used.* What structures give O(1) for both, and what do you track?
+
+.
+.
+↳ **A:** **Two hash maps + per-frequency doubly-linked lists.** `keyMap: key → {value, freq, node}`. `freqMap: freq → DLL of nodes at that frequency`, each DLL ordered by recency (newest at head). Track `minFreq`. **On get/put-hit:** move the node from its `freq` list to the `freq+1` list, bump freq; if its old list emptied and was `minFreq`, increment `minFreq`. **Evict:** pop the tail of `freqMap[minFreq]` (least-recently-used among least-frequent). **On insert:** set `minFreq = 1`. The per-frequency DLL is what makes LFU O(1) instead of needing a heap.
+
+---
+
+## 18. Heap / Priority Queue
 
 **Q1.** When do you reach for a heap?
 
@@ -1728,7 +1900,7 @@ How does "Word Search II" use a trie?
 
 ---
 
-## 15. Graphs
+## 19. Graphs
 
 **Q1.** BFS vs DFS — when do you pick each?
 
@@ -1816,8 +1988,15 @@ What data structure prevents creating duplicate clones, and what's the DFS vs BF
 ↳ **A:** Use a hash map `{original_node: cloned_node}` as both a visited set and a lookup for already-cloned nodes. **DFS:** for each node, create its clone, store in the map, then recurse on each neighbor — if the neighbor is already in the map, just wire the existing clone. **BFS:** same map, but use a queue. Key insight: the map serves double duty — it's your visited set *and* your way to find the clone of any node you've already processed. O(V+E) time and space.
 
 ---
+**Q13.** *Number of Islands II (LC 305): an m×n grid starts all water; given a stream of `addLand(r,c)` ops, return the island count after each.* Why is flood-fill-per-query too slow, and what's the optimal structure?
 
-## 16. 1-D DP
+.
+.
+↳ **A:** Re-running a full grid BFS/DFS after every addition is O(k·m·n) for k ops — too slow for a stream. **Use Union-Find (disjoint set) for dynamic connectivity.** Keep a running `count`. On `addLand(r,c)`: if already land, skip; else mark land and `count++`; then for each of the 4 neighbors that is land, **union** it with the new cell, and **each union that actually merges two distinct components does `count--`**. Record `count` after each op. With union-by-rank + path compression, each op is ~O(α(mn)) (near-constant) → total ≈ O(k·α(mn)). Map (r,c) → index `r*n + c` for the parent array.
+
+---
+
+## 20. 1-D DP
 
 **Q1.** How do you recognize a DP problem?
 
@@ -1922,7 +2101,7 @@ Base cases: `dp[i][0] = i` (delete all), `dp[0][j] = j` (insert all). O(m·n) ti
 
 ---
 
-## 17. Intervals
+## 21. Intervals
 
 **Q1.** You're reading a new interview problem. What clues in the problem statement tell you it's an intervals problem, and what's your default first step after recognizing it?
 
@@ -1983,7 +2162,7 @@ Intersection of two interval lists — what's the two-pointer pattern?
 
 ---
 
-## 18. Greedy
+## 22. Greedy
 
 **Q1.** When does greedy actually work?
 
@@ -2047,6 +2226,235 @@ Partition Labels — what's the greedy pattern?
 .
 .
 ↳ **A:** Sort by end time; greedily take each interval whose start ≥ last-taken end. **Proof**: any optimal schedule's first interval can be swapped with the greedy choice (whose end is ≤ optimal's first end) without conflict; induct on the rest. Same argument backs 'erase overlapping intervals' (Intervals Q5).
+
+---
+
+## 23. System Design — Situational Drills
+
+*Situational "in design X, how do you handle aspect Y?" drills — the interviewer follow-ups that map a concept to a specific common design.*
+
+**Q1.** URL shortener: two "create" requests could generate the same short code at the same instant. How do you guarantee every code is unique?
+
+.
+.
+↳ **A:** Generate codes from a globally-unique source — an auto-increment ID or a Snowflake ID, Base62-encoded — so uniqueness is guaranteed and collisions are impossible. If you hash instead, you must insert with a UNIQUE constraint and retry on the (rare) collision. *Tradeoff:* sequential IDs are enumerable/guessable — add a key-generation service that hands out pre-reserved ranges, or a random offset, if predictability matters.
+
+---
+**Q2.** Rate limiter spread across 50 gateway nodes: how do you enforce one global limit without races or double-counting?
+
+.
+.
+↳ **A:** Keep the counter in a shared store (Redis) and make check+increment a single **atomic** op (INCR or a Lua script) so concurrent requests can't race. Co-locate gateways and Redis to keep each check under ~5 ms. *Tradeoff:* during a Redis partition, fail **open** and accept slight over-admission rather than block all traffic — a few extra requests beats an outage.
+
+---
+**Q3.** News feed: a celebrity with 100M followers posts. Fanning out to 100M timelines on write is far too expensive. How do you handle it?
+
+.
+.
+↳ **A:** Hybrid fan-out: **push** (write into follower timelines) for normal users, but **pull** for high-follower accounts — their posts are merged in at read time instead of pushed. Threshold around ~10K followers. *Tradeoff:* the read path gets more complex (merge the pushed timeline with pulled celebrity posts), but you avoid the write storm.
+
+---
+**Q4.** Chat: how do you guarantee messages in a conversation appear in the same order on every device?
+
+.
+.
+↳ **A:** Assign a server-side **monotonic sequence number** (or logical clock) per conversation; clients sort by it, never by local receive time. Partition message storage by conversation_id so one partition owns ordering for that conversation. *Tradeoff:* a single sequencer per conversation caps that conversation's write rate — fine, since individual conversations aren't that hot.
+
+---
+**Q5.** Payment: a charge call to the processor times out and the client retries. How do you avoid double-charging the customer?
+
+.
+.
+↳ **A:** Attach an **idempotency key** to every attempt; the server records it and returns the original result on retry instead of charging again. Treat the timeout as **pending/uncertain**, not failed — the processor may still have completed it — and reconcile via its callback/settlement. *Tradeoff:* you must store keys durably and handle the race between a retry and the async callback (optimistic locking on the payment row).
+
+---
+**Q6.** Distributed cache: one viral key gets 1M reads/sec, melting the single shard that owns it. How do you spread that load?
+
+.
+.
+↳ **A:** Replicate the hot key across multiple nodes (read from any), and/or add a small in-process cache on each app server so most reads never reach the shard. Detect hot keys with per-key metrics. *Tradeoff:* replication and local caching add invalidation lag — fine for a viral read-mostly item, risky for fast-changing data.
+
+---
+**Q7.** Distributed job scheduler: how do you make sure two workers don't run the same scheduled job?
+
+.
+.
+↳ **A:** Workers atomically **claim** a job with a lease — a conditional update setting owner + expiry, or a distributed lock — so only the claimer runs it, and the lease auto-expires if the worker dies so another can retry. Make jobs idempotent as a backstop. *Tradeoff:* a lease can expire mid-run on a slow worker, causing a double-run — idempotency is what saves you, not the lock alone.
+
+---
+**Q8.** Web crawler at ~33k pages/sec across many domains: how do you avoid hammering any single domain (politeness)?
+
+.
+.
+↳ **A:** Rate-limit **per domain** (a token bucket keyed by domain) and **partition the frontier queue by domain** so one worker handles a domain's URLs serially; interleave domains when pulling so same-domain URLs aren't contiguous. *Tradeoff:* per-domain queuing complicates the frontier, but it's the only way to stay polite while still being fast in aggregate.
+
+---
+**Q9.** YouTube: how do you let a user upload a 10 GB video reliably without HTTP timeouts?
+
+.
+.
+↳ **A:** **Multipart / resumable upload**: the client splits the file into chunks and uploads them directly to object storage via pre-signed URLs, retrying only the chunks that fail; the server is notified on completion and kicks off async transcoding. *Tradeoff:* more client complexity, and you must track and garbage-collect incomplete multipart uploads.
+
+---
+**Q10.** Search autocomplete fires a request on every keystroke for millions of users. How do you keep it from crushing your datastore?
+
+.
+.
+↳ **A:** Serve suggestions from an in-memory structure (trie) or cache, **cache the top prefixes at the edge/CDN** (most users type the same popular prefixes), and debounce on the client. Never hit the primary DB per keystroke. *Tradeoff:* edge-cached suggestions lag fresh data slightly — perfectly acceptable for autocomplete.
+
+---
+**Q11.** Notification system: how do you avoid sending the same push twice when delivery is at-least-once?
+
+.
+.
+↳ **A:** **Dedupe** on a key (notification_id + recipient) stored with a TTL; the sender checks-and-sets before delivering, and consumers are idempotent. Accept at-least-once + dedupe rather than chasing true exactly-once (impractical at scale). *Tradeoff:* the dedupe TTL bounds how long you can catch duplicates — too short and a late retry slips through.
+
+---
+**Q12.** E-commerce: two users race to buy the last item in stock. How do you prevent overselling?
+
+.
+.
+↳ **A:** The stock decrement must be **strongly consistent**: an atomic conditional update (decrement only if quantity > 0, i.e., compare-and-set), a row lock, or a reservation with a TTL confirmed at payment. Eventual consistency on the count = oversell. *Tradeoff:* the hot row/lock limits checkout throughput for that item — shard or queue per-item for a flash sale.
+
+---
+**Q13.** A user updates a setting, immediately reloads, and a lagging replica serves the old value. How do you guarantee they see their own write?
+
+.
+.
+↳ **A:** **Read-your-writes**: for a short window after a user's write, route that user's reads to the leader; or tag the session with the write's version/timestamp and only serve from replicas caught up past it. *Tradeoff:* leader-routing concentrates load on the leader; version-tracking requires the client to carry the token.
+
+---
+**Q14.** Metrics pipeline: an engineer adds user_id as a metric label and the time-series DB falls over. Why, and how do you prevent it?
+
+.
+.
+↳ **A:** Each distinct label-value combination is its **own time series** — a high-cardinality label like user_id spawns millions of series, blowing up memory and index. Prevent it by capping label cardinality (allowlist labels, reject or aggregate high-cardinality dimensions at ingestion). *Tradeoff:* you lose per-user drill-down in metrics — push that to logs/traces, which are built for high cardinality.
+
+---
+**Q15.** Message queue: producers outpace consumers and the queue grows without bound. What do you do?
+
+.
+.
+↳ **A:** Apply **back-pressure** (a bounded queue that rejects/429s when full so producers slow down or shed), **autoscale consumers** up to the partition count, and prioritize or shed low-value work; alert on consumer lag. *Tradeoff:* rejecting work pushes the problem back to the producer — far better than an OOM crash deep in the stack, but the product must define what's droppable.
+
+---
+**Q16.** Coding platform (LeetCode): you run untrusted user-submitted code on your servers. How do you isolate it?
+
+.
+.
+↳ **A:** Run each submission in a locked-down container with **CPU/memory limits + a hard timeout**, layered with **syscall filtering (seccomp)** to block dangerous host calls (fork, raw sockets), a **read-only filesystem**, and **no outbound network** (only a local path to persist results). *Why all layers:* resource limits stop fork bombs/infinite loops, seccomp + read-only FS stop container escape and tampering, no egress stops data exfiltration. Defense in depth — any single control can fail.
+
+---
+**Q17.** Coding-contest leaderboard in a Redis sorted set: a user's submissions can finish out of order. How do you stop an older/lower score from overwriting a newer/better one?
+
+.
+.
+↳ **A:** Use **`ZADD … GT`** (Redis 6.2+), which updates the score only if the new value is greater — atomic, no read-then-write race. The score itself is the **fence**: a late, lower result simply no-ops. (If you needed strict ordering rather than best-wins, you'd fence on a logical timestamp instead.)
+
+---
+**Q18.** Should a 'live' coding-contest leaderboard use SSE/WebSockets or polling?
+
+.
+.
+↳ **A:** **Polling every few seconds is often the better default.** Contest submissions arrive sporadically, so a poll feels near-real-time while being far simpler to operate than persistent connections (no connection state, fan-out, or reconnect logic). Reach for SSE/WebSocket push only when updates are frequent and latency-critical. *(Don't call a pull-based design 'live' without saying it's polling.)*
+
+---
+**Q19.** Tinder: User A likes User B milliseconds after B liked A. How do you guarantee the match is detected and not lost to a race?
+
+.
+.
+↳ **A:** The like must be an **atomic check-and-write** — in one step, read whether the reverse like exists AND write this like (a DB transaction or a Redis `SETNX`/Lua script). Without atomicity, two simultaneous likes both read 'no match yet' and both skip creating the Match. The Match is its own entity (derived from two one-directional Swipes) and is what unlocks chat/notifications.
+
+---
+**Q20.** Tinder precomputes a candidate stack per user. Someone changes their age/location preference — how do you keep precomputed feeds fresh without huge recompute cost?
+
+.
+.
+↳ **A:** **Lazy, event-driven recompute:** enqueue the change and have a background worker refresh the affected feed on next read, rather than eagerly recomputing thousands of other users' stacks on every edit. Reserve **eager** invalidation for high-impact changes (a location update invalidates many stacks). Two layers: serve the cached stack instantly, fall back to a real-time indexed query to top it up when a user burns through it.
+
+---
+**Q21.** Tinder: don't re-show profiles a user already swiped on — but some users have swiped on millions. Keep that filter fast and cheap?
+
+.
+.
+↳ **A:** A **Bloom filter** per user: O(1) membership with tiny, near-constant memory regardless of history size. Trade-off: occasional **false positives** (rarely hide a valid profile) but **never false negatives** (never re-show a swiped one) — the acceptable direction for feed filtering.
+
+---
+**Q22.** Job scheduler: execute jobs within ~2s of their scheduled time without workers constantly polling `WHERE scheduled_time <= NOW()`.
+
+.
+.
+↳ **A:** Use a **delay queue**: the queue keeps a job **invisible until its scheduled time**, so workers receive it exactly when due — no polling jitter. Stronger than a priority queue (which still needs workers to poll the head) because timing is enforced by the queue itself. A polling design works at small scale but adds latency jitter equal to the poll interval.
+
+---
+**Q23.** Job scheduler: a job is persisted to the DB but the service crashes before enqueueing it for execution. Guarantee it's enqueued exactly once?
+
+.
+.
+↳ **A:** **Outbox pattern** — write the job and an outbox row in one DB transaction, then a separate publisher moves it to the queue: **CDC** (Debezium tails the DB log) *or* **polling** an outbox table (mark rows published). Both are *at-least-once*, so make the queue insert **idempotent on job ID** (dedup key) for effective exactly-once. Don't mix the two implementations.
+
+---
+**Q24.** Job scheduler: traffic is bursty (a 10k-job spike, then idle). Static VM worker pools either waste money or can't keep up. Better approach?
+
+.
+.
+↳ **A:** **Container orchestration (Kubernetes) or serverless** that autoscales workers on **queue depth / running-job count** — add capacity for the spike, scale toward zero when idle, bin-pack work onto fewer machines. Fixed VM pools can't react fast enough or efficiently to bursty concurrency.
+
+---
+**Q25.** Metrics platform: ingest 5M metrics/sec from 500k servers without melting the collectors.
+
+.
+.
+↳ **A:** **Agent-side batching:** the agent on each host buffers and flushes large batches, turning 5M req/s into far fewer, larger payloads at the ingestion tier — that's where most of the scale win comes from. Stateless collectors behind a load balancer write to **Kafka partitioned by metric/host** (partitioning is also parallelism: consumer groups process partitions concurrently). Client push is fire-and-forget so sources never block.
+
+---
+**Q26.** Designing the metrics store — justify a purpose-built time-series DB (VictoriaMetrics/InfluxDB/Timescale) over a general-purpose DB.
+
+.
+.
+↳ **A:** Three reasons to say out loud: (1) **append-heavy sequential writes** (metrics are write-once, time-ordered); (2) **efficient time-range scans** (queries are 'last 1h/30d for this series'); (3) **aggressive numeric compression** over time (delta/double-delta encoding shrinks huge volumes). A row-store OLTP DB is optimized for point reads/updates — the opposite workload.
+
+---
+**Q27.** Metrics alerting: evaluate 'above threshold for 5 minutes' in a streaming path. Keep per-series window state correct across crashes and rule deploys?
+
+.
+.
+↳ **A:** A stream processor (**Flink**) keeps **per-series rolling-window state** and **checkpoints it to durable storage (RocksDB / object storage)**, so a node crash restores the window instead of resetting it (which would cause false alerts or missed breaches). For rule changes mid-deploy, **version the rules** and apply a new definition only to windows that **start after** the update, so in-flight window state isn't corrupted.
+
+---
+**Q28.** Metrics pipeline: you add retries for reliability, but retried writes after a network blip create duplicate data points that corrupt aggregates. Fix?
+
+.
+.
+↳ **A:** Make writes **idempotent**: hash the metric's label set into a stable **series ID** and use it (with the timestamp) as a **dedup key** at the write layer, so a replayed point overwrites instead of double-counting. Retries become safe and aggregations/alerts stay correct.
+
+---
+**Q29.** Metrics dashboards: a user queries weeks or months of data and it's slow. Serve it fast.
+
+.
+.
+↳ **A:** **Tiered rollups + a result cache.** Pre-aggregate raw points into coarser resolutions (1-min buckets for weeks, 1-hr for months) so long-range queries scan far fewer points (long ranges accept lower resolution). Layer a **result cache** since dashboard refreshes re-run near-identical queries constantly. Route long ranges to the rollup store, recent/high-res to the raw TSDB.
+
+---
+**Q30.** Ticketmaster: prevent a user from losing their seat mid-checkout while also preventing double-selling.
+
+.
+.
+↳ **A:** **Seat state machine: available → pending → sold.** On select, atomically flip the seat to **pending with a short TTL** (a Redis hold / timestamp) — reserving it so concurrent buyers can't grab it; then take payment; then flip to **sold**. If payment doesn't finish before the TTL, the hold **auto-expires back to available**. The pending state is what makes hold-then-pay safe under concurrency.
+
+---
+**Q31.** Ticketmaster: the seat map should update in real time as others take seats for the same event.
+
+.
+.
+↳ **A:** Push, don't poll, under high concurrency: **SSE** (one-way is enough for availability) from the Ticket Service, plus a **fan-out layer** that takes each seat-state change and broadcasts it to all clients watching that event. WebSockets only if you need bidirectional. Polling is acceptable only at low concurrency — it lags and wastes requests during a hot on-sale.
+
+---
+**Q32.** Ticketmaster: a flash sale brings millions of fans for a few thousand seats. Admit them fairly without crushing the booking service.
+
+.
+.
+↳ **A:** A **virtual waiting room** backed by a **Redis sorted set keyed by join timestamp** for ordered, fair admission. Admit users in **batches by popping the front** at a rate the Ticket Service can sustain. Gate booking at the API gateway so only **admitted** users can hit the ticket service — everyone else holds their queue position. Converts an unbounded stampede into a controlled FIFO trickle.
 
 ---
 

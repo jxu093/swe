@@ -11,29 +11,43 @@
 
   /* Sidebar */
   #sidebar {
-    width: 260px; min-width: 260px; background: #1e1e2e; color: #cdd6f4;
+    width: 300px; min-width: 200px; max-width: 600px; flex-shrink: 0; background: #1e1e2e; color: #cdd6f4;
     display: flex; flex-direction: column; overflow: hidden;
   }
+  #sidebar-resizer {
+    width: 5px; flex-shrink: 0; cursor: col-resize; background: #1e1e2e;
+    border-right: 1px solid #11111b; transition: background 0.15s;
+  }
+  #sidebar-resizer:hover, #sidebar-resizer.dragging { background: #45475a; }
   #sidebar-header {
     padding: 12px 14px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
     text-transform: uppercase; color: #6c7086; border-bottom: 1px solid #313244;
     flex-shrink: 0; display: flex; align-items: center; gap: 8px;
   }
   #sidebar-header-label { flex: 1; }
-  #btn-flagged-filter {
-    display: flex; align-items: center; gap: 5px; background: none; border: 1px solid #313244;
-    border-radius: 20px; padding: 3px 9px; cursor: pointer; color: #6c7086;
-    font-size: 11px; font-weight: 700; letter-spacing: 0; text-transform: none;
-    transition: all 0.15s; white-space: nowrap;
-  }
-  #btn-flagged-filter:hover { border-color: #e05050; color: #e07070; }
-  #btn-flagged-filter.active { background: #3a1e1e; border-color: #e05050; color: #f38ba8; }
-  #flag-total { font-weight: 800; }
+  #flag-total, #new-total, #hidden-total { font-weight: 800; }
   #sidebar-list { overflow-y: auto; flex: 1; padding: 6px 0; }
+
+  /* Category section header */
+  .cat-header {
+    display: flex; align-items: center; width: 100%; padding: 9px 12px; gap: 6px;
+    background: #181825; border: none; border-top: 1px solid #25253a;
+    color: #9399b2; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; cursor: pointer; text-align: left;
+    position: sticky; top: 0; z-index: 2;
+  }
+  .cat-header:hover { color: #cdd6f4; background: #1e1e2e; }
+  .cat-chevron {
+    font-style: normal; font-size: 8px; color: #585b70; flex-shrink: 0;
+    transition: transform 0.18s; display: inline-block; line-height: 1;
+  }
+  .cat-header.open .cat-chevron { transform: rotate(90deg); }
+  .cat-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-count { font-size: 10px; color: #585b70; flex-shrink: 0; }
 
   /* Deck header row */
   .deck-header {
-    display: flex; align-items: center; width: 100%; padding: 8px 14px 8px 12px;
+    display: flex; align-items: center; width: 100%; padding: 8px 14px 8px 20px;
     background: none; border: none; color: #bac2de; font-size: 13px; cursor: pointer;
     line-height: 1.4; transition: background 0.15s, color 0.15s; text-align: left;
     gap: 0;
@@ -102,7 +116,7 @@
   #stopwatch.very-slow { background: #fef2f2; color: #dc2626; }
 
   /* Card area */
-  #card-area { flex: 1; overflow-y: auto; padding: 32px 36px; display: flex; gap: 28px; }
+  #card-area { flex: 1; overflow-y: auto; padding: 28px 36px; display: flex; gap: 28px; width: 100%; max-width: 1100px; margin: 0 auto; }
 
   /* Question panel */
   #question-panel { flex: 1; min-width: 0; }
@@ -114,7 +128,7 @@
   #question-text {
     background: #fff; border: 1px solid #e5e5e0; border-radius: 12px;
     padding: 22px 24px; font-size: 15px; line-height: 1.7; color: #1a1a1a;
-    min-height: 120px;
+    min-height: 0;
   }
   #card-topic { font-size: 12px; color: #999; margin-top: 8px; font-style: italic; }
   #lc-link-area { margin-top: 8px; }
@@ -268,6 +282,7 @@
 
   /* ────── Mobile (Galaxy S24 ≈ 384px portrait) ────── */
   @media (max-width: 768px) {
+    #sidebar-resizer { display: none; }
     body { height: 100vh; overflow: hidden; }
 
     /* Sidebar becomes slide-in drawer */
@@ -341,6 +356,16 @@
     /* Hide keyboard shortcuts hint — no keyboard on phone */
     #shortcuts-hint { display: none; }
 
+    /* Icon-only topbar buttons; sticky bottom action bar replaces inline Show/Next */
+    .btn-label { display: none; }
+    #answer-count { display: none; }
+    #btn-flag, #btn-hide, #btn-random { padding: 6px 9px; font-size: 15px; }
+    #btn-row { display: none; }
+    #main #mobile-actions {
+      display: flex; padding: 9px 12px; gap: 8px; flex-shrink: 0;
+      background: #fff; border-top: 1px solid #e5e5e0; box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+    }
+
     /* Card area scrolls; avoid horizontal overflow on code blocks */
     .md-render pre { padding: 11px 12px; font-size: 12px; }
     .md-render code { font-size: 12px; }
@@ -356,6 +381,43 @@
     #question-text { padding: 14px 14px; font-size: 14px; }
     #answer-text { padding: 14px 14px; }
   }
+  /* Filter bar + sort */
+  #filter-bar { display: flex; gap: 4px; padding: 0 8px 8px; flex-wrap: wrap; flex-shrink: 0; }
+  .filter-btn, #btn-sort-least {
+    background: none; border: 1px solid #313244; border-radius: 20px; padding: 3px 9px;
+    cursor: pointer; color: #6c7086; font-size: 11px; font-weight: 700; white-space: nowrap; transition: all 0.15s;
+  }
+  .filter-btn:hover, #btn-sort-least:hover { color: #cdd6f4; border-color: #45475a; }
+  .filter-btn.active { background: #313244; border-color: #585b70; color: #cdd6f4; }
+  #btn-sort-least.active { background: #1e2a44; border-color: #89b4fa; color: #89b4fa; }
+  #sidebar-header { justify-content: space-between; }
+  /* Topbar hide button + answer count */
+  #btn-hide {
+    background: none; border: 1px solid #ddd; border-radius: 8px; padding: 5px 11px;
+    font-size: 13px; font-weight: 600; cursor: pointer; color: #aaa; transition: all 0.15s; white-space: nowrap;
+  }
+  #btn-hide:hover { border-color: #888; color: #555; background: #fafafa; }
+  #btn-hide.hidden-on { border-color: #888; color: #555; background: #eee; }
+  #answer-count { font-size: 12px; color: #999; font-weight: 600; white-space: nowrap; }
+  #btn-random {
+    background: none; border: 1px solid #ddd; border-radius: 8px; padding: 5px 11px;
+    font-size: 13px; font-weight: 600; cursor: pointer; color: #6c50a0; transition: all 0.15s; white-space: nowrap;
+  }
+  #btn-random:hover { border-color: #8a6fd0; color: #5a3a9a; background: #f7f4fd; }
+  #btn-random:active { background: #efe9fb; }
+  #mobile-actions { display: none; }
+  #btn-mobile-primary { flex: 1; padding: 14px; font-size: 15px; border-radius: 10px; }
+  /* New badge + sidebar markers */
+  #card-new-badge {
+    display: inline-block; background: #fff3cd; color: #9a6b00; font-size: 11px; font-weight: 800;
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; margin-left: 6px; letter-spacing: 0.5px;
+  }
+  .card-new-dot { font-size: 10px; margin-left: 4px; flex-shrink: 0; }
+  .card-answers { font-size: 10px; color: #585b70; margin-left: 5px; flex-shrink: 0; }
+  .topic-subhead {
+    padding: 5px 10px 4px 28px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; color: #7f849c; background: #181825;
+  }
 </style>
 </head>
 <body>
@@ -363,14 +425,20 @@
 <div id="sidebar">
   <div id="sidebar-header">
     <span id="sidebar-header-label">Decks</span>
-    <button id="btn-flagged-filter" title="Show flagged cards only">
-      🚩 <span id="flag-total">0</span>
-    </button>
+    <button id="btn-sort-least" title="Sort cards by least answered">⇅ least</button>
+  </div>
+  <div id="filter-bar">
+    <button class="filter-btn active" data-view="all" title="All cards">All</button>
+    <button class="filter-btn" data-view="flagged" title="Flagged only">🚩 <span id="flag-total">0</span></button>
+    <button class="filter-btn" data-view="new" title="New cards only">✨ <span id="new-total">0</span></button>
+    <button class="filter-btn" data-view="hidden" title="Hidden cards">👁 <span id="hidden-total">0</span></button>
   </div>
   <div id="sidebar-list"></div>
 </div>
 
 <div id="sidebar-backdrop"></div>
+
+<div id="sidebar-resizer" title="Drag to resize the sidebar"></div>
 
 <div id="main">
   <div id="topbar">
@@ -378,6 +446,9 @@
     <div id="deck-title">–</div>
     <div id="card-counter">–</div>
     <button id="btn-flag" title="Flag this card for review (F)">🚩 Flag</button>
+    <button id="btn-hide" title="Hide this card">🙈 <span class="btn-label">Hide</span></button>
+    <button id="btn-random" title="Jump to a random card">🎲 <span class="btn-label">Random</span></button>
+    <span id="answer-count"></span>
     <div id="stopwatch">0:00</div>
   </div>
 
@@ -385,6 +456,7 @@
     <div id="question-panel">
       <div id="question-label">Question</div>
       <div id="card-id-badge"></div>
+      <span id="card-new-badge" style="display:none;">✨ NEW</span>
       <div id="question-text" class="md-render"></div>
       <div id="card-topic"></div>
       <div id="lc-link-area" style="display:none;">
@@ -434,6 +506,10 @@
     </div>
   </div>
 
+  <div id="mobile-actions">
+    <button id="btn-mobile-primary" class="btn btn-primary">Show Answer</button>
+  </div>
+
   <div id="shortcuts-hint">
     <kbd>Enter</kbd> show answer &nbsp;·&nbsp; <kbd>→</kbd> next card &nbsp;·&nbsp; <kbd>1</kbd> got it &nbsp;·&nbsp; <kbd>2</kbd> missed it &nbsp;·&nbsp; <kbd>f</kbd> flag
   </div>
@@ -451,7 +527,10 @@ let state = {
   timerStart: null,
   timerInterval: null,
   expandedDecks: new Set(),
-  flaggedOnly: false,
+  expandedCategories: new Set(),
+  view: 'all',
+  sortLeastAnswered: false,
+  answeredThisCard: false,
 };
 
 // Flags — stored separately so they survive clearing position state
@@ -466,7 +545,7 @@ function toggleFlag(dIdx, cIdx) {
   else flags.add(key);
   saveFlags();
   updateFlagButton();
-  updateFlagCount();
+  updateFilterCounts();
   buildSidebar();
 }
 
@@ -480,20 +559,74 @@ function loadFlags() {
   } catch(e) { flags = new Set(); }
 }
 
+// Hidden cards + per-card answer counts (persisted separately, like flags)
+let hidden = new Set();
+let answers = {};
+function isHidden(d, c) { return hidden.has(cardKey(d, c)); }
+function isNewCard(dIdx, cIdx) { return !!DECKS[dIdx].cards[cIdx].new; }
+function answerCount(d, c) { return answers[cardKey(d, c)] || 0; }
+function cardInView(dIdx, cIdx) {
+  const h = isHidden(dIdx, cIdx);
+  switch (state.view) {
+    case 'hidden':  return h;
+    case 'flagged': return !h && isFlagged(dIdx, cIdx);
+    case 'new':     return !h && isNewCard(dIdx, cIdx);
+    default:        return !h;
+  }
+}
+function countNew() { let n = 0; DECKS.forEach((d, di) => d.cards.forEach((c, ci) => { if (c.new && !isHidden(di, ci)) n++; })); return n; }
+function saveHidden() { try { localStorage.setItem('swe-fc-hidden', JSON.stringify([...hidden])); } catch(e) {} }
+function loadHidden() { try { hidden = new Set(JSON.parse(localStorage.getItem('swe-fc-hidden') || '[]')); } catch(e) { hidden = new Set(); } }
+function saveAnswers() { try { localStorage.setItem('swe-fc-answers', JSON.stringify(answers)); } catch(e) {} }
+function loadAnswers() { try { answers = JSON.parse(localStorage.getItem('swe-fc-answers') || '{}') || {}; } catch(e) { answers = {}; } }
+function toggleHidden(d, c) {
+  const k = cardKey(d, c);
+  if (hidden.has(k)) hidden.delete(k); else hidden.add(k);
+  saveHidden(); updateHideButton(); updateFilterCounts(); buildSidebar();
+}
+function updateHideButton() {
+  const btn = document.getElementById('btn-hide');
+  const h = isHidden(state.deckIdx, state.cardIdx);
+  btn.classList.toggle('hidden-on', h);
+  btn.innerHTML = h ? '🙈 <span class="btn-label">Hidden</span>' : '🙈 <span class="btn-label">Hide</span>';
+}
+function updateAnswerCount() {
+  const n = answerCount(state.deckIdx, state.cardIdx);
+  document.getElementById('answer-count').textContent = n ? ('answered ' + n + '\u00d7') : '';
+}
+function recordAnswer() {
+  if (state.answeredThisCard) return;
+  state.answeredThisCard = true;
+  const k = cardKey(state.deckIdx, state.cardIdx);
+  answers[k] = (answers[k] || 0) + 1;
+  saveAnswers(); updateAnswerCount(); buildSidebar();
+}
+function randomCard() {
+  const pool = [];
+  DECKS.forEach((d, di) => d.cards.forEach((c, ci) => { if (cardInView(di, ci)) pool.push([di, ci]); }));
+  if (!pool.length) return;
+  const [di, ci] = pool[Math.floor(Math.random() * pool.length)];
+  goToCard(di, ci);
+}
+function updateMobilePrimary() {
+  const btn = document.getElementById('btn-mobile-primary');
+  if (btn) btn.textContent = state.answerShown ? 'Next Card →' : 'Show Answer';
+}
+
 function updateFlagButton() {
   const btn = document.getElementById('btn-flag');
   const flagged = isFlagged(state.deckIdx, state.cardIdx);
   btn.classList.toggle('flagged', flagged);
-  btn.textContent = flagged ? '🚩 Flagged' : '🚩 Flag';
+  btn.innerHTML = flagged ? '🚩 <span class="btn-label">Flagged</span>' : '🚩 <span class="btn-label">Flag</span>';
 }
 
-function updateFlagCount() {
+function updateFilterCounts() {
   document.getElementById('flag-total').textContent = flags.size;
-  const filterBtn = document.getElementById('btn-flagged-filter');
-  filterBtn.classList.toggle('active', state.flaggedOnly);
-  // Dim the filter button if there are no flags
-  filterBtn.style.opacity = flags.size === 0 ? '0.4' : '1';
-  filterBtn.style.pointerEvents = flags.size === 0 ? 'none' : '';
+  document.getElementById('new-total').textContent = countNew();
+  document.getElementById('hidden-total').textContent = hidden.size;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+  const sortBtn = document.getElementById('btn-sort-least');
+  if (sortBtn) sortBtn.classList.toggle('active', state.sortLeastAnswered);
 }
 
 // Persist / restore position
@@ -503,6 +636,9 @@ function saveState() {
       deckIdx: state.deckIdx,
       cardIdx: state.cardIdx,
       expandedDecks: [...state.expandedDecks],
+      expandedCategories: [...state.expandedCategories],
+      view: state.view,
+      sortLeastAnswered: state.sortLeastAnswered,
     }));
   } catch(e) {}
 }
@@ -519,10 +655,17 @@ function loadState() {
     if (Array.isArray(s.expandedDecks)) {
       state.expandedDecks = new Set(s.expandedDecks);
     }
-    // Always expand the active deck on load
+    if (Array.isArray(s.expandedCategories)) {
+      state.expandedCategories = new Set(s.expandedCategories);
+    }
+    if (s.view) state.view = s.view;
+    if (typeof s.sortLeastAnswered === 'boolean') state.sortLeastAnswered = s.sortLeastAnswered;
+    // Always expand the active deck and its category on load
     state.expandedDecks.add(state.deckIdx);
+    state.expandedCategories.add(categoryOf(DECKS[state.deckIdx].id));
   } catch(e) {
     state.expandedDecks.add(state.deckIdx);
+    state.expandedCategories.add(categoryOf(DECKS[state.deckIdx].id));
   }
 }
 
@@ -557,68 +700,105 @@ function cardPreview(question) {
     .split('\n').find(l => l.trim()) || '';
 }
 
+// Sidebar category grouping (keeps the 23-deck nav short and scannable)
+const CATEGORIES = [
+  { label: '⚠️ Flagged', match: id => id === 0 },
+  { label: 'DSA · Core Patterns', match: id => id >= 1 && id <= 8 },
+  { label: 'System Design', match: id => (id >= 9 && id <= 16) || id === 23 },
+  { label: 'DSA · More Topics', match: id => id >= 17 && id <= 22 },
+];
+function categoryOf(deckId) {
+  const c = CATEGORIES.find(c => c.match(deckId));
+  return c ? c.label : '';
+}
+function toggleCategory(label) {
+  if (state.expandedCategories.has(label)) state.expandedCategories.delete(label);
+  else state.expandedCategories.add(label);
+  saveState();
+  buildSidebar();
+}
+
 // Build sidebar
 function buildSidebar() {
   const list = document.getElementById('sidebar-list');
   list.innerHTML = '';
 
-  DECKS.forEach((deck, dIdx) => {
-    // In flagged-only mode, skip decks with no flagged cards
-    const deckFlaggedCards = deck.cards
-      .map((c, cIdx) => ({ c, cIdx }))
-      .filter(({ cIdx }) => isFlagged(dIdx, cIdx));
-    if (state.flaggedOnly && deckFlaggedCards.length === 0) return;
+  CATEGORIES.forEach(cat => {
+    const catDecks = DECKS.map((deck, dIdx) => ({ deck, dIdx })).filter(({ deck }) => cat.match(deck.id));
 
-    const isActiveDeck = dIdx === state.deckIdx;
-    const isOpen = state.expandedDecks.has(dIdx);
-    const deckFlagCount = deckFlaggedCards.length;
+    const deckViews = catDecks.map(({ deck, dIdx }) => {
+      let cards = deck.cards.map((c, cIdx) => ({ c, cIdx })).filter(({ cIdx }) => cardInView(dIdx, cIdx));
+      if (state.sortLeastAnswered) {
+        cards = cards.slice().sort((a, b) => answerCount(dIdx, a.cIdx) - answerCount(dIdx, b.cIdx));
+      } else if (deck.id === 0) {
+        const order = {}; let o = 0;
+        deck.cards.forEach(c => { if (c.topic && !(c.topic in order)) order[c.topic] = o++; });
+        cards = cards.slice().sort((a, b) => (order[a.c.topic] ?? 99) - (order[b.c.topic] ?? 99));
+      }
+      return { deck, dIdx, cards };
+    }).filter(d => d.cards.length > 0);
+    if (deckViews.length === 0) return;
 
-    // Deck header
-    const header = document.createElement('button');
-    header.className = 'deck-header' +
-      (isActiveDeck ? ' active-deck' : '') +
-      (isOpen ? ' open' : '');
-    const flagBadge = deckFlagCount > 0
-      ? `<span style="font-size:10px;margin-left:5px;opacity:0.7">🚩${deckFlagCount}</span>`
-      : '';
-    const countLabel = state.flaggedOnly ? deckFlagCount : deck.cards.length;
-    header.innerHTML =
-      `<i class="deck-chevron">&#9654;</i>` +
-      `<span class="deck-num">${deck.id}.</span>` +
-      `<span class="deck-name">${deck.title}</span>` +
-      flagBadge +
-      `<span class="deck-count">${countLabel}</span>`;
+    const catOpen = state.expandedCategories.has(cat.label);
+    const catCount = deckViews.reduce((n, d) => n + d.cards.length, 0);
 
-    header.onclick = () => toggleDeck(dIdx);
-    list.appendChild(header);
+    const catBtn = document.createElement('button');
+    catBtn.className = 'cat-header' + (catOpen ? ' open' : '');
+    catBtn.innerHTML =
+      `<i class="cat-chevron">&#9654;</i>` +
+      `<span class="cat-label">${cat.label}</span>` +
+      `<span class="cat-count">${deckViews.length} · ${catCount}</span>`;
+    catBtn.onclick = () => toggleCategory(cat.label);
+    list.appendChild(catBtn);
+    if (!catOpen) return;
 
-    // Card list
-    const cardList = document.createElement('div');
-    cardList.className = 'card-list' + (isOpen ? ' open' : '');
+    deckViews.forEach(({ deck, dIdx, cards }) => {
+      const isActiveDeck = dIdx === state.deckIdx;
+      const isOpen = state.expandedDecks.has(dIdx);
 
-    const cardsToShow = state.flaggedOnly
-      ? deckFlaggedCards
-      : deck.cards.map((c, cIdx) => ({ c, cIdx }));
+      const header = document.createElement('button');
+      header.className = 'deck-header' + (isActiveDeck ? ' active-deck' : '') + (isOpen ? ' open' : '');
+      const shortName = deck.title.replace(/^System Design — /, '');
+      header.innerHTML =
+        `<i class="deck-chevron">&#9654;</i>` +
+        `<span class="deck-num">${deck.id}.</span>` +
+        `<span class="deck-name">${shortName}</span>` +
+        `<span class="deck-count">${cards.length}</span>`;
+      header.onclick = () => toggleDeck(dIdx);
+      list.appendChild(header);
 
-    cardsToShow.forEach(({ c: card, cIdx }) => {
-      const isActiveCard = isActiveDeck && cIdx === state.cardIdx;
-      const flagged = isFlagged(dIdx, cIdx);
-      const item = document.createElement('button');
-      item.className = 'card-item' + (isActiveCard ? ' active-card' : '');
-      item.id = isActiveCard ? 'active-card-item' : '';
-      const preview = cardPreview(card.question);
-      item.innerHTML =
-        `<span class="card-item-id">${card.id || (cIdx + 1)}</span>` +
-        `<span class="card-item-text">${preview.slice(0, 44)}${preview.length > 44 ? '…' : ''}</span>` +
-        (flagged ? `<span class="card-flag-dot">🚩</span>` : '');
-      item.onclick = () => goToCard(dIdx, cIdx);
-      cardList.appendChild(item);
+      const cardList = document.createElement('div');
+      cardList.className = 'card-list' + (isOpen ? ' open' : '');
+
+      const groupByTopic = deck.id === 0 && !state.sortLeastAnswered;
+      let lastTopic = null;
+      cards.forEach(({ c: card, cIdx }) => {
+        if (groupByTopic && card.topic && card.topic !== lastTopic) {
+          lastTopic = card.topic;
+          const sub = document.createElement('div');
+          sub.className = 'topic-subhead';
+          sub.textContent = card.topic;
+          cardList.appendChild(sub);
+        }
+        const isActiveCard = isActiveDeck && cIdx === state.cardIdx;
+        const item = document.createElement('button');
+        item.className = 'card-item' + (isActiveCard ? ' active-card' : '');
+        item.id = isActiveCard ? 'active-card-item' : '';
+        const preview = cardPreview(card.question);
+        const ac = answerCount(dIdx, cIdx);
+        item.innerHTML =
+          `<span class="card-item-id">${card.id || (cIdx + 1)}</span>` +
+          `<span class="card-item-text">${preview.slice(0, 40)}${preview.length > 40 ? '…' : ''}</span>` +
+          (card.new ? `<span class="card-new-dot">✨</span>` : '') +
+          (isFlagged(dIdx, cIdx) ? `<span class="card-flag-dot">🚩</span>` : '') +
+          (ac ? `<span class="card-answers">${ac}×</span>` : '');
+        item.onclick = () => goToCard(dIdx, cIdx);
+        cardList.appendChild(item);
+      });
+      list.appendChild(cardList);
     });
-
-    list.appendChild(cardList);
   });
 
-  // Scroll active card into view
   requestAnimationFrame(() => {
     const el = document.getElementById('active-card-item');
     if (el) el.scrollIntoView({ block: 'nearest' });
@@ -639,6 +819,7 @@ function goToDeck(idx) {
   state.deckIdx = idx;
   state.cardIdx = 0;
   state.expandedDecks.add(idx);
+  state.expandedCategories.add(categoryOf(DECKS[idx].id));
   saveState();
   renderCard();
   buildSidebar();
@@ -648,6 +829,7 @@ function goToCard(dIdx, cIdx) {
   state.deckIdx = dIdx;
   state.cardIdx = cIdx;
   state.expandedDecks.add(dIdx);
+  state.expandedCategories.add(categoryOf(DECKS[dIdx].id));
   saveState();
   renderCard();
   buildSidebar();
@@ -752,6 +934,12 @@ function renderCard() {
 
   // Flag button state
   updateFlagButton();
+  updateHideButton();
+  document.getElementById('card-new-badge').style.display = card.new ? '' : 'none';
+  state.answeredThisCard = false;
+  updateAnswerCount();
+  updateMobilePrimary();
+  document.getElementById('card-area').scrollTop = 0;
 
   // Start stopwatch
   startTimer();
@@ -779,6 +967,7 @@ function showAnswer() {
   document.getElementById('answer-panel').classList.add('visible');
   document.getElementById('btn-show').style.display = 'none';
   document.getElementById('btn-next-card').style.display = '';
+  updateMobilePrimary();
 }
 
 function nextCard() {
@@ -791,20 +980,31 @@ function nextCard() {
 document.getElementById('btn-got-it').onclick = function() {
   this.classList.add('selected');
   document.getElementById('btn-missed').classList.remove('selected');
+  recordAnswer();
 };
 document.getElementById('btn-missed').onclick = function() {
   this.classList.add('selected');
   document.getElementById('btn-got-it').classList.remove('selected');
+  recordAnswer();
 };
 
 document.getElementById('btn-flag').onclick = function() {
   toggleFlag(state.deckIdx, state.cardIdx);
 };
-
-document.getElementById('btn-flagged-filter').onclick = function() {
-  state.flaggedOnly = !state.flaggedOnly;
-  updateFlagCount();
-  buildSidebar();
+document.getElementById('btn-hide').onclick = function() {
+  toggleHidden(state.deckIdx, state.cardIdx);
+};
+document.querySelectorAll('.filter-btn').forEach(b => b.onclick = () => {
+  state.view = (state.view === b.dataset.view && b.dataset.view !== 'all') ? 'all' : b.dataset.view;
+  updateFilterCounts(); saveState(); buildSidebar();
+});
+document.getElementById('btn-sort-least').onclick = function() {
+  state.sortLeastAnswered = !state.sortLeastAnswered;
+  updateFilterCounts(); saveState(); buildSidebar();
+};
+document.getElementById('btn-random').onclick = randomCard;
+document.getElementById('btn-mobile-primary').onclick = function() {
+  if (state.answerShown) nextCard(); else showAnswer();
 };
 
 document.getElementById('btn-hint').onclick = function() {
@@ -882,6 +1082,13 @@ document.addEventListener('keydown', function(e) {
 // ── LeetCode URLs ──
 // Keys: "cardId" for Deck 0 (F1–F22), "deckId-cardId" for concept decks
 const CARD_LC_URLS = {
+  '3-Q10': 'https://leetcode.com/problems/car-fleet/',
+  '19-Q13': 'https://leetcode.com/problems/number-of-islands-ii/',
+  // Added optimal-solution cards
+  '6-Q15': 'https://leetcode.com/problems/house-robber-iii/',
+  '17-Q9': 'https://leetcode.com/problems/copy-list-with-random-pointer/',
+  '17-Q10': 'https://leetcode.com/problems/find-the-duplicate-number/',
+  '17-Q11': 'https://leetcode.com/problems/lfu-cache/',
   // Deck 0: Flagged problems
   'F1':  'https://leetcode.com/problems/top-k-frequent-elements/',
   'F2':  'https://leetcode.com/problems/encode-and-decode-strings/',
@@ -962,48 +1169,50 @@ const CARD_LC_URLS = {
   '8-Q5': 'https://leetcode.com/problems/n-queens/',
   '8-Q7': 'https://leetcode.com/problems/word-search/',
   '8-Q8': 'https://leetcode.com/problems/word-break/',
-  // Deck 13: Linked List
-  '13-Q3': 'https://leetcode.com/problems/linked-list-cycle-ii/',
-  '13-Q4': 'https://leetcode.com/problems/merge-two-sorted-lists/',
-  '13-Q6': 'https://leetcode.com/problems/remove-nth-node-from-end-of-list/',
-  '13-Q7': 'https://leetcode.com/problems/reorder-list/',
-  // Deck 14: Heap / Priority Queue
-  '14-Q3': 'https://leetcode.com/problems/find-median-from-data-stream/',
-  '14-Q4': 'https://leetcode.com/problems/merge-k-sorted-lists/',
-  '14-Q5': 'https://leetcode.com/problems/task-scheduler/',
-  // Deck 15: Graphs
-  '15-Q3': 'https://leetcode.com/problems/course-schedule/',
-  '15-Q7': 'https://leetcode.com/problems/graph-valid-tree/',
-  '15-Q8': 'https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/',
-  '15-Q9': 'https://leetcode.com/problems/word-ladder/',
-  '15-Q11': 'https://leetcode.com/problems/number-of-islands/',
-  '15-Q12': 'https://leetcode.com/problems/clone-graph/',
-  // Deck 16: 1-D DP
-  '16-Q5': 'https://leetcode.com/problems/house-robber/',
-  '16-Q6': 'https://leetcode.com/problems/coin-change/',
-  '16-Q7': 'https://leetcode.com/problems/maximum-product-subarray/',
-  '16-Q8': 'https://leetcode.com/problems/word-break/',
-  '16-Q9': 'https://leetcode.com/problems/longest-increasing-subsequence/',
-  '16-Q10': 'https://leetcode.com/problems/palindromic-substrings/',
-  '16-Q11': 'https://leetcode.com/problems/longest-common-subsequence/',
-  '16-Q12': 'https://leetcode.com/problems/edit-distance/',
-  // Deck 17: Intervals
-  '17-Q2': 'https://leetcode.com/problems/merge-intervals/',
-  '17-Q3': 'https://leetcode.com/problems/insert-interval/',
-  '17-Q4': 'https://leetcode.com/problems/meeting-rooms-ii/',
-  '17-Q5': 'https://leetcode.com/problems/non-overlapping-intervals/',
-  '17-Q6': 'https://leetcode.com/problems/interval-list-intersections/',
-  // Deck 18: Greedy
-  '18-Q2': 'https://leetcode.com/problems/jump-game/',
-  '18-Q3': 'https://leetcode.com/problems/jump-game-ii/',
-  '18-Q4': 'https://leetcode.com/problems/gas-station/',
-  '18-Q5': 'https://leetcode.com/problems/partition-labels/',
+  // Deck 17: Linked List
+  '17-Q3': 'https://leetcode.com/problems/linked-list-cycle-ii/',
+  '17-Q4': 'https://leetcode.com/problems/merge-two-sorted-lists/',
+  '17-Q6': 'https://leetcode.com/problems/remove-nth-node-from-end-of-list/',
+  '17-Q7': 'https://leetcode.com/problems/reorder-list/',
+  // Deck 18: Heap / Priority Queue
+  '18-Q3': 'https://leetcode.com/problems/find-median-from-data-stream/',
+  '18-Q4': 'https://leetcode.com/problems/merge-k-sorted-lists/',
+  '18-Q5': 'https://leetcode.com/problems/task-scheduler/',
+  // Deck 19: Graphs
+  '19-Q3': 'https://leetcode.com/problems/course-schedule/',
+  '19-Q7': 'https://leetcode.com/problems/graph-valid-tree/',
+  '19-Q8': 'https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/',
+  '19-Q9': 'https://leetcode.com/problems/word-ladder/',
+  '19-Q11': 'https://leetcode.com/problems/number-of-islands/',
+  '19-Q12': 'https://leetcode.com/problems/clone-graph/',
+  // Deck 20: 1-D DP
+  '20-Q5': 'https://leetcode.com/problems/house-robber/',
+  '20-Q6': 'https://leetcode.com/problems/coin-change/',
+  '20-Q7': 'https://leetcode.com/problems/maximum-product-subarray/',
+  '20-Q8': 'https://leetcode.com/problems/word-break/',
+  '20-Q9': 'https://leetcode.com/problems/longest-increasing-subsequence/',
+  '20-Q10': 'https://leetcode.com/problems/palindromic-substrings/',
+  '20-Q11': 'https://leetcode.com/problems/longest-common-subsequence/',
+  '20-Q12': 'https://leetcode.com/problems/edit-distance/',
+  // Deck 21: Intervals
+  '21-Q2': 'https://leetcode.com/problems/merge-intervals/',
+  '21-Q3': 'https://leetcode.com/problems/insert-interval/',
+  '21-Q4': 'https://leetcode.com/problems/meeting-rooms-ii/',
+  '21-Q5': 'https://leetcode.com/problems/non-overlapping-intervals/',
+  '21-Q6': 'https://leetcode.com/problems/interval-list-intersections/',
+  // Deck 22: Greedy
+  '22-Q2': 'https://leetcode.com/problems/jump-game/',
+  '22-Q3': 'https://leetcode.com/problems/jump-game-ii/',
+  '22-Q4': 'https://leetcode.com/problems/gas-station/',
+  '22-Q5': 'https://leetcode.com/problems/partition-labels/',
 };
 
 // Init
 loadState();
 loadFlags();
-updateFlagCount();
+loadHidden();
+loadAnswers();
+updateFilterCounts();
 
 // Deep-link: #F14 → flagged card, #deck-2 → Two Pointers deck, #deck-2-Q4 → specific card
 (function applyDeepLink() {
@@ -1034,8 +1243,34 @@ updateFlagCount();
   }
 })();
 
+updateFilterCounts();
 buildSidebar();
 renderCard();
+
+// Sidebar resize — drag the divider; width persists across sessions
+(function initSidebarResize() {
+  const sidebar = document.getElementById('sidebar');
+  const resizer = document.getElementById('sidebar-resizer');
+  if (!sidebar || !resizer) return;
+  const saved = parseInt(localStorage.getItem('swe-fc-sidebar-w') || '', 10);
+  if (saved >= 200 && saved <= 600) sidebar.style.width = saved + 'px';
+  let dragging = false;
+  resizer.addEventListener('mousedown', e => {
+    dragging = true; resizer.classList.add('dragging');
+    document.body.style.userSelect = 'none'; document.body.style.cursor = 'col-resize';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    sidebar.style.width = Math.max(200, Math.min(600, e.clientX)) + 'px';
+  });
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false; resizer.classList.remove('dragging');
+    document.body.style.userSelect = ''; document.body.style.cursor = '';
+    try { localStorage.setItem('swe-fc-sidebar-w', parseInt(sidebar.style.width, 10) || 300); } catch (e) {}
+  });
+})();
 </script>
 </body>
 </html>

@@ -23,8 +23,11 @@ study-guides/
   leetcode-20-patterns.md   Top 20 LeetCode patterns
   dsa-top-problems.md       Core DSA problem set
   tree-patterns.md          Tree-specific patterns
-  system-design-interview-questions.md
+  system-design-problem-playbook.md   20 common SD problems at recall density
+  system-design-cheat-sheet.md        Numbers, scaling triggers, scenario→tech
+  system-design-tech-stacks.md        Tech stack tables per problem
   payment-system-design.md
+  ddia-distributed-systems.md         DDIA ch. 8 & 9 notes
   backend-architecture-checklist.md
   index.md                  Study guides index
 ```
@@ -32,6 +35,6 @@ study-guides/
 ## Context
 
 - This repo lives inside the Obsidian vault at `~/Documents/Obsidian/swe/`
-- Flashcard system: 19 decks, 190 cards total (DSA patterns, system design, flagged problems)
+- Flashcard system: 24 decks, 256 cards total (DSA patterns, system design, flagged problems). System Design is decks 9–16 (8 topic decks) plus a situational-drills deck (23); additional DSA is decks 17–22.
 - Reference materials: NeetCode 150, DDIA, SDI Vol 2, Hello Interview / Interviewing.io
 - The `Prep-Plan-Viewer.html` links to LC problems and deep-links flashcards via `SWE-Flashcards.html#F14` format

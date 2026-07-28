@@ -6,6 +6,42 @@
 
 ---
 
+## 📌 READ BEFORE EVERY MOCK — Main Areas to Work On
+
+*Synthesized from 5 mocks (4 system design + 1 coding). Target role: Google Senior SWE, Platforms Infrastructure.*
+
+**The meta-pattern:** Gaps aren't *knowledge* — they're **process and communication under pressure.** You know the material; you stumble on how you approach problems and externalize your thinking. Process is faster to fix than content.
+
+**If you only drill three things:**
+1. **Estimation-first (SD)** — the instant requirements are done, convert numbers → QPS + storage + bandwidth, then *compare each to a single node's capacity* — the gap forces the architecture. (Appeared in ALL 4 SD mocks.)
+2. **Don't disappear (coding)** — announce silence, think on an example, surface clean checkpoints. Don't broadcast the tangle, don't go silently dark.
+3. **Reason out loud, whether you hold or change your mind: "I picked X over Y because Z"** — applies to SD components and coding approaches alike.
+
+### System Design (4 mocks — consistent)
+
+- **① Estimation DRIVES design** — you compute but don't *use* the numbers. The method: **number → compare to one node's capacity → the gap forces a specific move** (shard / replicate / cache / fan-out / object store).
+  - *Worked example (crawler):* 20B pages / 7d = **33k pages/sec**. One machine, bandwidth-bound at ~1 MB/page: 1 Gbps ≈ 125/s, 10 Gbps ≈ 1,250/s → **tens-to-hundreds of machines = a coordinated fleet.** Storage: 20B × 1 MB = **20 PB** → object store (S3), not a DB. Queue: 33k dequeued × ~10 links = **330k URLs/sec enqueued** → must partition (one Redis ≈ 100k ops/s).
+  - **State soft numbers as assumptions and invite correction** ("~a few hundred pages/sec per machine — match your env?"). Anchor to the resource that physically binds (bandwidth). Show the conclusion is *robust* to the assumption — that's the senior move, not asserting a precise number.
+- **② Concrete mechanisms** — name the actual data structure / algorithm / keys; no hand-waving when pushed deeper.
+- **③ Components must EARN their place** *(refined — not "always label")* — generic labels are fine on the first pass ("a queue here, a cache here"; move fast). Name the specific tech *only when it's load-bearing* (tied to a tradeoff) or when asked. The real test isn't naming — it's: can you justify why each box exists and what breaks without it? (The crawler ding was "why does the URL DB exist?", not "you didn't say Kafka.")
+- **④ Reason under pressure — not argue, not fold** *(refined)* — what's tested is tradeoff *reasoning*, not winning. Three cases when poked: **valid + you agree** → concede *with reasoning* ("good point, that breaks under X, so I'd switch to Z because…") = senior, not losing; **unsure** → say so, reason through it; **not actually valid** → hold *as reasoning* ("I considered that; I still prefer this because [tradeoff]"). **Calibrate confidence out loud:** committed decision → defend/update with reasoning; exploratory idea → label it ("let me throw out an option we can poke at") — ruling it out together is collaboration, not folding. Bad = presenting a tentative idea as firm, then caving silently.
+- *(Sub: NFR & API precision — exact latency targets, response shapes, status codes.)*
+
+### Coding (1 mock — clear signals)
+
+- **⑤ Clarify before coding** — 60–90 sec on inputs/outputs/validity/edge cases first.
+- **⑥ Approach before code** — brute force out loud, then optimize. No solving-while-typing.
+- **⑦ Narration / cognitive load** *(refined — what to say when thoughts are tangled)* — you don't verbalize the raw tangle. Three tools: **(a) elevate to structure** — "options → criterion → which I'll try and why," not the stream; **(b) announced, bounded silence** — "let me think 30–60s, then I'll walk you through it" (frees 100% of your brain to solve; ≠ silent struggling); **(c) think on the example** — tracing a concrete case is visible thinking with no clean voiceover required. Cadence = *think (quiet/example) → clean checkpoint → think → checkpoint*. Checkpoints are low-load because you're summarizing a conclusion already reached.
+- **⑧ Pattern fluency** — implementation reps on patterns you already know (the expression-tree stumble), not new theory.
+- **⑨ Design without invalid states** — constructor validation or type hierarchy.
+
+### Role-specific (Google Platforms Infra)
+- **Lean on your distributed-systems background** (Azure SDN control plane) in design + depth + behavioral rounds — it's a real edge.
+- **Concurrency concepts** matter more here: locks vs atomics, race conditions, memory model, thread pools, producer/consumer.
+- **Coding bar is unchanged** — same algorithmic rounds regardless of team; don't under-invest in DSA fluency.
+
+---
+
 ## Themes Index
 
 Quick reference for recurring gap areas. Updated as new mocks surface patterns.
@@ -24,6 +60,13 @@ Quick reference for recurring gap areas. Updated as new mocks surface patterns.
 | **Payment lifecycle** | Separate PaymentIntent from PaymentAttempt; model multi-stage statuses (created→authorized→pending→settled→failed) | Payment System (May 5) |
 | **Security & auditability** | HSM for private keys, CDC for tamper-proof audit trails, encryption beyond just SSL | Payment System (May 5) |
 | **Partition key design** | Choose keys that guarantee event ordering per entity; don't mix unrelated IDs into composite keys | Payment System (May 5) |
+| **Clarify before coding** | Ask about inputs, outputs, validity, edge cases, space/time tradeoffs BEFORE writing any code. 1-2 min max. | Coding Mock (May 10) |
+| **Approach before code** | State brute force first, then optimize. Never "solve while typing" — it reads as no plan. | Coding Mock (May 10) |
+| **Design for invalid states** | When designing classes/data structures, discuss how to prevent illegal combinations. Show the tradeoff (validation vs. type hierarchy). | Coding Mock (May 10) |
+| **Estimation DRIVES design** | Don't just compute numbers — use them to justify every component (fleet size, queue throughput, storage tier). Same root as NFR precision. | Web Crawler (Jun 1) ⚠️ recurring w/ NFR precision |
+| **Concrete mechanisms** | When asked to go deeper, describe the actual algorithm/criteria, not the general idea. "Materialize the idea into an algorithm" before moving on. | Web Crawler (Jun 1) |
+| **Label & defend components** | Name the tech (Kafka/SQS/Redis), give a 1-2 sentence why, and explain what breaks without it. If you can't justify a component, cut it. | Web Crawler (Jun 1) |
+| **Hold ground under pressure** | Interviewer will keep poking. Defend not just what you chose but why over alternatives, and the cost of doing it differently. | Web Crawler (Jun 1) |
 
 ---
 
@@ -172,6 +215,169 @@ Quick reference for recurring gap areas. Updated as new mocks surface patterns.
 - [ ] Memorize: HSM = where private keys live. CDC = how you get tamper-proof audit trails. These are the standard answers.
 - [ ] Memorize: partition key = transaction ID alone for event ordering. Don't mix in merchant ID.
 - [x] Add flashcards for: payment lifecycle (Q25), HSM + CDC (Q26), partition key design (Q27), timeout + idempotency (Q28)
+
+---
+
+## Coding Mock: Expression Evaluator
+
+**Date:** Sat May 10, 2026 (Week 4)
+**Format:** Paid mock (3 parts: data structure design, method implementation, algorithmic problem)
+**Overall rating from interviewer:** Mid-level, not senior — due to process, not technical ability.
+
+### What went well
+
+- **Evaluate method** — explained thinking before coding, came across clearly. This is the standard to replicate.
+- **Eventually asked good clarification questions** — integer vs. double, which operators are in scope. Problem: these came mid-implementation instead of upfront.
+
+### What went wrong
+
+- **No clarification questions before coding on any of the 3 parts.** This was the single biggest gap. The interviewer flagged it across all three sections. Senior bar = gather requirements first, just like a real project.
+- **Jumped into code on the final problem without defining an approach.** Hoped the solution would emerge while typing. It didn't — wasted time and produced throwaway code.
+- **Data structure allowed invalid states.** Expression class had `isLeaf` + `operator` fields that could be set inconsistently. Didn't discuss alternatives (constructor validation vs. type hierarchy with OperatorExpression / ValueExpression subclasses).
+- **Went silent when stuck.** Had the right instinct (stack-based) but couldn't map it. Searched silently instead of involving the interviewer or pattern-matching out loud.
+
+### Root cause analysis
+
+The communication gaps weren't random — they stem from one thing: **not recognizing the pattern fast enough.** When you know the approach, you naturally communicate well (see: evaluate method). When you don't, your fallback is "start typing and hope." That fallback is the problem.
+
+### Fallback protocol (when pattern doesn't click in 90 seconds)
+
+Memorize this sequence and use it every time:
+
+1. **State brute force out loud.** Even if it's O(n³), describe it. It shows structure, often reveals the optimization, and gives you a "working" approach. Say: "The brute force would be to [X], which is O(n²). Let me see if I can do better."
+2. **Run the pattern checklist out loud.** Can I sort this? Sliding window? Two pointers? Stack? Divide and conquer? Graph/BFS? DP? Say it: "This feels like it could be divide and conquer because there's a natural split point on the lowest-priority operator..."
+3. **After 2 minutes of no progress, say so.** "I'm seeing a stack-based approach but I'm not sure how to handle operator precedence — can I walk through my thinking with you?" The interviewer will hint. Hints with dialogue >> silent struggling.
+
+**Key mindset shift:** The communication IS the solving. Don't treat them as "solve first, then explain." Articulating your thinking out loud is how you find the solution faster, AND it's what the interviewer is evaluating. They're the same activity.
+
+### The 90-second opening protocol (do this on EVERY problem)
+
+Before writing a single line of code:
+
+1. **Restate the problem** in your own words (10 sec)
+2. **Ask clarification questions** (30-60 sec):
+   - What are the inputs? Types? Ranges? Always valid?
+   - What are the outputs? Format?
+   - Edge cases: empty input, single element, negatives, duplicates?
+   - Constraints: space vs. time preference?
+3. **State your approach** (30 sec):
+   - Brute force first, with complexity
+   - Optimized approach if you see it, with complexity
+   - "Does that sound reasonable before I start coding?"
+
+### Specific technical takeaway
+
+- **Expression evaluation → divide and conquer.** Split on the lowest-priority operator (scan for `+/-` first, then `*/`), recurse left and right, base case = single number. This is a standard pattern — add to flashcard review.
+
+### The cognitive load problem (and the fix)
+
+**The real issue isn't communication — it's that solving and performing compete for the same working memory.** When the solution isn't already in your head, you talk to yourself non-linearly (sometimes pacing/walking) to think. That thought process doesn't map to being heard and judged. Trying to do both at once splits your brain in half — half solving, half self-conscious about what to say — and you do neither well.
+
+**The fix: narrate ACTIONS, not THINKING.**
+
+Your thinking is non-linear and impossible to narrate cleanly. Don't try. Instead, narrate concrete actions — primarily **tracing through an example**.
+
+- ❌ Narrating thought: "Hmm, maybe a stack... no wait, a hashmap... actually if I go backwards..."
+- ✅ Narrating action: "Let me trace through `[4, 2, 7, 1]` and see what happens at each step."
+
+Tracing an example is the cheat code. It (1) helps YOU think because concrete beats abstract — the same reason you like writing code, (2) gives the interviewer visible signal without exposing your messy internal process, and (3) doesn't split your attention, because you're walking through data, not translating thoughts into words.
+
+**Three time-buying phrases that keep you from going silent:**
+
+1. "Let me trace through an example..." → then just work through specific values
+2. "I'm stuck on [specific thing], let me think for a sec..." → 30 sec of silence is fine; 3 min is not
+3. "I have an instinct that [X] works but I'm not sure why yet — let me verify with this case..."
+
+**Mindset shift:** The interviewer doesn't expect clean linear narration. They expect to not be in the dark. **Uncertainty stated clearly reads as confidence. Uncertainty hidden reads as floundering.** "I think this is sliding window but I'm not sure how to handle the shrink condition — let me try an example" is a senior-level statement.
+
+### THIS WEEK'S DRILL: build the narration muscle in two stages
+
+**Stage 1 — Zero solving load (do this first, 3 sessions):**
+Take 3 problems you've ALREADY solved cold (e.g., Two Sum, Valid Parentheses, Reverse Linked List). Re-solve them with a timer, speaking the entire time. Since solving costs ~nothing, 100% of your brainpower goes to the communication muscle. Goal: get used to *what it sounds like* to talk through a problem. The self-consciousness drops once the muscle memory exists.
+
+**Stage 2 — Add back partial solving load:**
+Move to problems where you know the PATTERN but haven't seen the exact problem. Now you're layering solving back on, but narration is already semi-automatic. Practice leading every step with a trace-through.
+
+Track it: speak out loud on every LC problem from now until the next mock. No silent solving, even alone.
+
+### Action Items from This Mock
+
+- [ ] **Stage 1 narration drill** — 3 already-solved problems, speak the whole time, timer on. (Do before Stage 2.)
+- [ ] **Stage 2 narration drill** — known-pattern-but-new problems, lead each step with a trace-through.
+- [ ] **Drill the 90-second opening protocol** on the next 5 LC problems. Don't type anything until you've said the approach out loud (even alone, speak it).
+- [ ] **Practice the fallback protocol** by intentionally picking 2 unfamiliar LC problems this week and forcing yourself through the checklist before coding.
+- [ ] **Default to tracing an example** whenever stuck, instead of pacing/talking to yourself. The example is both your thinking tool AND your communication tool.
+- [ ] **Add "expression evaluation → divide and conquer" to flashcard deck** (Deck 0 or a new card).
+- [ ] When designing a class/data structure, always ask: "Can this represent an invalid state? How would I prevent that?" — make this a reflex.
+- [ ] **Treat each follow-up question as a new problem.** Re-clarify assumptions. Ask if input is always valid. Don't carry assumptions forward.
+
+---
+
+## Mock #4: Design a Web Crawler
+
+**Date:** Mon Jun 1, 2026
+**Format:** Paid mock (Google/FAANG senior bar)
+**Prep reading:** None — had never seen a web crawler design before.
+
+### What went well
+
+- **High-level structure was correct** — appropriately skipped the API section, laid out a reasonable HLD, walked through components in order.
+- **Good caching instincts** — rate-limiting cache and visited-sites (dedup) cache were both the right calls.
+
+### The headline failure: given numbers, never used them
+
+- Was handed **20 billion pages over 7 days** and never converted it. At senior level this is non-negotiable.
+- **The math the interviewer wanted:**
+  - Throughput: 20B ÷ (7 × 86,400s) ≈ **33,000 pages/sec** → tells you crawler fleet size + queue throughput requirement
+  - Storage: 20B × ~1MB/page = **~20 PB** → flags that cold storage is wrong; S3 is the appropriate choice
+- **The lesson:** the numbers aren't a box to tick — they're the JUSTIFICATION engine for every architectural decision. Without them, every choice looks arbitrary and the interviewer can't validate that the design scales. This is the SAME gap as the "NFR precision" theme from mocks 1-3. Four mocks, same hole. **This is now the #1 fix.**
+
+### Where answers were too vague (be concrete about the mechanism)
+
+- **Rate limiter** — took too long to get to a clear answer, and even then the details weren't crisp. Need the actual mechanism (e.g., per-domain token bucket in Redis, key = domain, refill rate = politeness limit).
+- **Queue worker enqueue criteria** — answer about "batch size and estimated processing speed" was too approximate. Need exact, defined criteria.
+- **URL database purpose** — couldn't crisply explain why it existed as a separate component. Interviewer pushed on whether it was needed at all when the queue already tracks what to visit.
+- **Fix:** "materialize the idea into a concrete algorithm before moving on." If you can't describe the exact steps, you haven't finished the thought.
+
+### Queue conflict problem (politeness / same-domain clustering)
+
+- **The problem:** a page like Wikipedia yields ~1000 same-domain URLs that end up contiguous in the queue → crawlers hammer one domain (violates politeness) and starve others.
+- **My answer (too weak):** just re-enqueue failed items. Not senior-level.
+- **Two defensible solutions the interviewer gave:**
+  1. **Interleave across domains** when pulling from the DB so same-domain URLs are spread apart in the queue.
+  2. **Partition the queue into channels by domain hash**, crawlers round-robin across channels. (This is consistent hashing applied to queue partitioning.)
+- Be able to explain ONE of these clearly and defend it.
+
+### Label and defend every component
+
+- When drawing a queue, say **Kafka vs SQS** and give a 1-2 sentence reason. Same for caches and DBs.
+- For a **one-shot 7-day crawl**, question whether each piece of infra is necessary. If you can't explain why a component is there and what breaks without it → cut it or think harder. (The URL DB was the casualty here.)
+
+### Defend tradeoffs under pressure
+
+- Attempted tradeoff discussion (right instinct) but folded when challenged on the URL DB.
+- **Fix:** practice articulating (1) what you chose, (2) why over the alternative, (3) the cost of doing it differently. The interviewer WILL keep poking — that's the test.
+
+### Meta-pattern (across coding mock + this one)
+
+Recurring rationalization: "if I'd known the solution beforehand I'd have communicated better." Partly true for SD (canonical set is finite — pre-read it). But the dinged skills here — **estimation-driven design, concrete mechanisms, labeling/defending components, holding ground** — are design-AGNOSTIC and transfer to every problem. Knowing the crawler answer would have HIDDEN these gaps, not fixed them. Don't let "read the canonical designs" become an excuse to skip drilling the universal skills.
+
+### Recommended reading (from interviewer)
+
+- [ ] Consistent Hashing for SD Interviews → domain-partitioned queue channels (the pattern he had to introduce)
+- [ ] Kafka Deep Dive for SD Interviews → naming/justifying queue tech
+- [ ] Sharding in SD Interviews → domain-sharded queue for politeness
+- [ ] Design a Distributed Job Scheduler (Airflow) → fault tolerance / failure recovery (a gap in the crawler design)
+
+### Action Items from This Mock
+
+- [ ] **DRILL: estimation-first.** On the next 5 SD problems, the FIRST thing after requirements is convert given numbers → RPS + storage + bandwidth, then explicitly say "so this means [N] servers / [tier] storage." Make it a reflex, not an afterthought. (Highest priority — recurring across 4 mocks.)
+- [ ] **Pre-read the canonical SD designs** — web crawler, TinyURL, chat, feed, search, YouTube, Dropbox, ticketmaster, notification, etc. Finite set; close the floor.
+- [ ] **Practice the "defend under pressure" loop** — after stating a choice, immediately self-challenge out loud: "alternative would be X, I picked this because Y, cost is Z."
+- [ ] **Concrete-mechanism drill** — when you name a component (rate limiter, dedup, queue worker), force yourself to state the exact data structure + algorithm + keys before moving on.
+- [ ] Learn the two queue-conflict solutions (interleave by domain / partition by domain hash) cold.
+- [ ] Read the 4 recommended articles above.
+- [ ] Add flashcards: crawler throughput/storage math, politeness via domain-partitioned queue, "label every component" checklist.
 
 ---
 

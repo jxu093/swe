@@ -629,7 +629,7 @@
 <nav id="sidebar">
   <div id="sidebar-header">
     <h1>Prep Plan</h1>
-    <div class="dates">Apr 14 – May 24, 2026</div>
+    <div class="dates">Apr 14 – May 24, 2026 · + Phase 2</div>
   </div>
   <div id="week-nav">
     <button class="week-btn" onclick="showWeek(0)" id="wb-0">
@@ -659,14 +659,26 @@
       <span class="week-label">Week 6</span>
       <span class="week-dates">May 18 – 24</span>
     </button>
+    <button class="week-btn" onclick="showWeek(8)" id="wb-8">
+      <span class="week-label">Week 7 · Phase 2</span>
+      <span class="week-dates">Jun 1 – 7</span>
+    </button>
+    <button class="week-btn" onclick="showWeek(9)" id="wb-9">
+      <span class="week-label">Week 8 · Phase 2</span>
+      <span class="week-dates">Jun 8 – 14</span>
+    </button>
+    <button class="week-btn" onclick="showWeek(10)" id="wb-10">
+      <span class="week-label">Week 9 · Phase 2</span>
+      <span class="week-dates">Jun 15 – 21</span>
+    </button>
     <button class="week-btn" onclick="showWeek(7)" id="wb-7">
       <span class="week-label">Flagged Problems</span>
     </button>
   </div>
   <div id="sidebar-footer">
-    ~13.5 hrs/week<br>
-    50% DSA · 50% System Design<br>
-    Apply: May 25, 2026
+    Phase 2 sprint · Jun 1 – 21<br>
+    ~50/50 · mock every Sat<br>
+    Target: Google Platforms Infra
   </div>
 </nav>
 
@@ -682,6 +694,9 @@
     <div class="tab" onclick="showWeek(4)" id="tab-4">Wk 4</div>
     <div class="tab" onclick="showWeek(5)" id="tab-5">Wk 5</div>
     <div class="tab" onclick="showWeek(6)" id="tab-6">Wk 6</div>
+    <div class="tab" onclick="showWeek(8)" id="tab-8">Wk 7</div>
+    <div class="tab" onclick="showWeek(9)" id="tab-9">Wk 8</div>
+    <div class="tab" onclick="showWeek(10)" id="tab-10">Wk 9</div>
     <div class="tab" onclick="showWeek(7)" id="tab-7">Flagged</div>
   </div>
 
@@ -690,7 +705,7 @@
 
     <div style="margin-bottom:24px;">
       <div style="font-size:24px;font-weight:800;margin-bottom:6px;">Senior SWE Interview Prep</div>
-      <div style="font-size:14px;color:var(--muted);">6-week plan · Apr 14 – May 24, 2026 · Start applying May 25</div>
+      <div style="font-size:14px;color:var(--muted);">6-week plan complete · now in <strong>Phase 2: a focused 3-week sprint (Jun 1 – 21)</strong> — Weeks 7–9, ~50/50 DSA/SD. ~2 canonical SD designs per week (math done every time) + a mock every Saturday, balanced with core NeetCode review and the pattern families the mocks exposed (parsing/expression, design/simulation, union-find, two-heaps). <strong>Tilted for Google Platforms Infrastructure:</strong> SD leans infra (distributed cache, KV store, message queue, scheduler) + concurrency (thread-safe LRU rep + concept block).</div>
     </div>
 
     <div class="progress-section">
@@ -779,6 +794,11 @@
   <div id="panel-5" class="panel"></div>
   <div id="panel-6" class="panel"></div>
 
+  <!-- ── Panels 8–10: Phase 2 (Weeks 7–9, rendered by renderWeek) ── -->
+  <div id="panel-8" class="panel"></div>
+  <div id="panel-9" class="panel"></div>
+  <div id="panel-10" class="panel"></div>
+
   <!-- ── Panel 7: Flagged Problems ── -->
   <div id="panel-7" class="panel" style="padding:28px 32px;">
     <div class="section-title">Flagged Problems — Deck 0 <span>22 cards to re-solve</span></div>
@@ -806,7 +826,10 @@
 // DATA
 // ════════════════════════════════════════════════════════
 
-const TODAY_STR = new Date().toISOString().slice(0, 10); // dynamic — always today's date
+// Local date (NOT toISOString, which is UTC — that rolls over to tomorrow in the
+// evening for timezones behind UTC, e.g. Seattle PDT, and mis-highlights "today").
+const _now = new Date();
+const TODAY_STR = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 
 const WEEKS = [
   null, // index 0 = overview
@@ -1175,8 +1198,8 @@ const WEEKS = [
         time: '3 h',
         dotColor: '#89b4fa',
         sessions: [
-          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — review everything ≥14d old' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '90 min: 2 mediums timed, mixed.' },
+          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — catch-up sweep: Arrays & Hashing (Deck 1, +21d), SD DDIA Ch 1 (Deck 9, +21d), SD DDIA Ch 2–3 (Deck 10, +14d), Heap (Deck 14, +14d), Intervals (Deck 17, +14d)' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '90 min: 2 mediums timed (45 min each, no hints): Course Schedule II (LC 210, Graphs — output topological order) + Partition Labels (LC 763, Greedy — last-occurrence + greedy extend).' },
           { type: 'sd-block', label: 'System Design', text: '60 min: DDIA Ch 8–9 (Distributed troubles, Consistency) — skim + flashcard add.' },
         ],
         flagged: []
@@ -1191,46 +1214,24 @@ const WEEKS = [
     checkpoint: '<strong>End of Week 5:</strong> All NeetCode 150 topics touched. 5 SD mocks done. STAR bank started.',
     days: [
       {
-        id: 'w5-mon',
+        id: 'w5-oncall',
         date: '2026-05-11',
-        label: 'Mon May 11',
-        time: '1.5 h',
-        dotColor: '#89b4fa',
+        label: 'Mon–Wed May 11–13 (Oncall)',
+        time: '4.5 h total',
+        dotColor: '#fab387',
         sessions: [
-          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Trees (+30d) + Tries (+30d)' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: Single Number + Counting Bits + Reverse Bits (bit manipulation speed drill).' },
-        ],
-        flagged: []
-      },
-      {
-        id: 'w5-tue',
-        date: '2026-05-12',
-        label: 'Tue May 12',
-        time: '1.5 h',
-        dotColor: '#cba6f7',
-        sessions: [
-          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Consistency/CAP deck' },
-          { type: 'sd-block', label: 'System Design', text: '35 min: Xu Vol 2 — read the chapter closest to your weakest mock topic (Proximity Service if geo patterns are weak, Metrics Monitoring for time-series/aggregation, or Hotel Reservation for booking/concurrency).' },
-          { type: 'sd-block', label: 'System Design', text: '40 min: Re-attempt your weakest SD topic from mocks 1–4 fully, applying what you just read. Compare to v1.' },
-        ],
-        flagged: []
-      },
-      {
-        id: 'w5-wed',
-        date: '2026-05-13',
-        label: 'Wed May 13',
-        time: '1.5 h',
-        dotColor: '#89b4fa',
-        sessions: [
-          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Backtracking (+30d)' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: Rotate Image + Spiral Matrix + Happy Number (math & geometry).' },
+          { type: 'warmup', label: '⚠️ Oncall', text: 'Modules are independent and priority-ranked. Do as many as you can in whatever gaps you get. Flashcards first, LC next, SD reading last.' },
+          { type: 'warmup', label: 'P1 · Flashcards', text: '15 min each, do one per break: (a) Trees (+30d) + Tries (+30d), (b) Backtracking (+30d), (c) Consistency/CAP deck.' },
+          { type: 'dsa-block', label: 'P2 · Bit Manip', text: '40 min: Single Number (LC 136) + Counting Bits (LC 338) + Reverse Bits (LC 190). Speed drill. Can split — do Single Number alone in 10 min if short on time.' },
+          { type: 'dsa-block', label: 'P3 · Math & Geo', text: '45 min, splittable: Rotate Image (LC 48, 15 min) + Spiral Matrix (LC 54, 15 min) + Happy Number (LC 202, 10 min).' },
+          { type: 'sd-block', label: 'P4 · SD Drilling', text: '75 min (needs contiguous block): Xu Vol 2 weakest mock chapter (35 min) + re-attempt that SD topic applying what you read (40 min).' },
         ],
         flagged: []
       },
       {
         id: 'w5-thu',
         date: '2026-05-14',
-        label: 'Thu May 14',
+        label: 'Thu May 14 (afternoon)',
         time: '1.5 h',
         dotColor: '#cba6f7',
         sessions: [
@@ -1261,7 +1262,7 @@ const WEEKS = [
           { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — Deck 12 Q17–Q28 (+14d) + Heap (+21d) + Intervals (+21d) + Graphs (+21d)' },
           { type: 'sd-block', label: 'Pre-mock review', text: '10 min: Read Mock-Practice-Notes.md themes index. By now you have 4 mocks logged — check which themes keep appearing. These are your real weak spots vs. one-off mistakes.' },
           { type: 'mock-block', label: 'SD Mock #5 ★', text: '110 min: Full 60-min peer mock (book by Tue May 12). 50 min of self-review afterward. Post-mock: add entry to Mock-Practice-Notes.md.' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '30 min: 1 hard problem from a topic you\'re confident in (confidence build).' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '30 min: Binary Tree Maximum Path Sum (LC 124, Hard, Trees) — confident topic, should be clean by now.' },
         ],
         flagged: []
       },
@@ -1273,7 +1274,7 @@ const WEEKS = [
         dotColor: '#89b4fa',
         sessions: [
           { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — 1-D DP (+21d) + SD Replication (+14d) + Consistency/CAP (+7d)' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '90 min: 2 mediums timed, mixed topics, pick at random.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '90 min: 2 mediums timed (45 min each, no hints): Container With Most Water (LC 11, Two Pointers) + Word Search (LC 79, Backtracking — grid DFS with visited tracking).' },
           { type: 'mixed-block', label: 'Behavioral', text: '60 min: Write 4–6 STAR stories from your Azure SDN work. Cover: conflict, ambiguity, driving change, scope creep, failure, mentoring.' },
         ],
         flagged: []
@@ -1295,7 +1296,7 @@ const WEEKS = [
         dotColor: '#89b4fa',
         sessions: [
           { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Intervals deck (from your own notes) + Greedy deck' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: Full LC interview sim — 1 medium in 20 min + 1 hard in 40 min. Strict timing. No hints.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: Full LC interview sim — strict timing, no hints: Group Anagrams (LC 49, Medium, Arrays & Hashing, 20 min) + Word Search II (LC 212, Hard, Backtracking + Tries, 40 min).' },
         ],
         flagged: []
       },
@@ -1319,7 +1320,7 @@ const WEEKS = [
         dotColor: '#89b4fa',
         sessions: [
           { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Heap (+30d) + DP decks (new)' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: Pick 2 weakest topics from the last 5 weeks. Do one medium from each.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: 2 mediums from newest (likely weakest) topics: Target Sum (LC 494, Medium, DP — knapsack variant) + Cheapest Flights Within K Stops (LC 787, Medium, Graphs — Bellman-Ford / BFS with constraints).' },
         ],
         flagged: []
       },
@@ -1343,7 +1344,7 @@ const WEEKS = [
         dotColor: '#89b4fa',
         sessions: [
           { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Linked List (+30d) + Graphs (+30d)' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: 1 hard from a weak topic. Full write-up.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '75 min: Longest Increasing Path in a Matrix (LC 329, Hard, DFS + Memoization). Full write-up — combines graph traversal and DP.' },
         ],
         flagged: []
       },
@@ -1357,7 +1358,7 @@ const WEEKS = [
           { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — SD Replication (+21d) + Consistency/CAP (+14d) + Intervals (+30d, from own notes) + Greedy (+3d)' },
           { type: 'sd-block', label: 'Pre-mock review', text: '10 min: Mock-Practice-Notes.md final themes check. Any theme that appeared in 3+ mocks = drill it one more time before the mock.' },
           { type: 'mock-block', label: 'SD Mock #6 ★', text: '80 min: Peer mock — pretend it\'s on-site. Post-mock: add entry to Mock-Practice-Notes.md.' },
-          { type: 'dsa-block', label: 'LC / DSA', text: '60 min: 1 medium + 1 hard, timed.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '60 min timed: Palindromic Substrings (LC 647, Medium, DP — expand-around-center, 20 min) + Alien Dictionary (LC 269, Hard, Topological Sort — builds on Course Schedule pattern, 40 min).' },
         ],
         flagged: []
       },
@@ -1371,6 +1372,297 @@ const WEEKS = [
           { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — final sweep (Deck 12 Q17–Q28 at +30d — mark mature if instant)' },
           { type: 'mock-block', label: 'SD Mock #7 ★', text: '90 min: Solo timed — pick a design you haven\'t done yet (e.g., Dropbox, Uber). Post-mock: final Mock-Practice-Notes.md entry.' },
           { type: 'mixed-block', label: 'Behavioral + Admin', text: '60 min: Final behavioral rehearsal + resume/LinkedIn polish.' },
+        ],
+        flagged: []
+      },
+    ]
+  },
+  null, // index 7 = Flagged Problems (rendered separately by renderFlagged)
+  {
+    label: 'Week 7',
+    dates: 'Jun 1 – Jun 7, 2026 · Phase 2 · ~50/50',
+    dsaFocus: 'Core review (Arrays/Two Pointers) + fluency drills on patterns you already know',
+    sdFocus: 'Web Crawler (failed mock) + Distributed Message Queue',
+    checkpoint: '<strong>End of Week 7:</strong> Crawler + Message Queue done. Stack-expression & design/simulation fluency drilled. Core arrays/two-pointers warm. Mock #5 logged.',
+    days: [
+      {
+        id: 'w7-mon',
+        date: '2026-06-01',
+        label: 'Mon Jun 1',
+        time: '1.5 h · SD',
+        dotColor: '#cba6f7',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — SD: Messaging, Streaming & Real-time (Deck 14)' },
+          { type: 'sd-block', label: 'System Design ★', text: '75 min: Web Crawler (the failed mock — do first). Math FIRST: 20B pages / 7d ≈ 33k pages/sec, ~20 PB → S3 not cold storage. Politeness via domain-partitioned queue. Label and defend every component; cut the URL DB if you cannot justify it. 1-page reference answer.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w7-tue',
+        date: '2026-06-02',
+        label: 'Tue Jun 2',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Arrays & Hashing deck' },
+          { type: 'dsa-block', label: 'Core review · Narration Stage 1', text: '75 min: Core review (Arrays & Hashing + Two Pointers — your most-asked topics). Re-solve 3 you know cold (Group Anagrams, Valid Palindrome, Container With Most Water), speaking the entire time. Then drill the 90-second opening on each. Zero solving load — 100% on the talking muscle.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w7-wed',
+        date: '2026-06-03',
+        label: 'Wed Jun 3',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Stack deck' },
+          { type: 'dsa-block', label: 'Fluency drill · Expression eval (your gap)', text: '75 min: Stack-based expression evaluation — exactly what you blanked on (you had the stack idea, drill the step-by-step). Evaluate Reverse Polish Notation (LC 150) → Basic Calculator II (LC 227, the stack implementation). Then Different Ways to Add Parentheses (LC 241) as the divide-and-conquer variation. Clean execution, not new theory.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w7-thu',
+        date: '2026-06-04',
+        label: 'Thu Jun 4',
+        time: '1.5 h · DSA + concurrency',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — weakest DSA deck' },
+          { type: 'dsa-block', label: 'LRU + OOP + concurrency rep', text: '75 min: LRU Cache (LC 146) — build it clean (HashMap + doubly-linked list), then make it thread-safe (your one concurrency coding rep: lock around map+list or lock striping; know why a coarse lock kills throughput). OOP/LLD micro-review (~10 min): can this class reach an invalid state → constructor validation or a small type hierarchy (the exact gap from your coding mock). Narration on. [Multithreading bumped up for the Platforms Infra role — pairs with the concept block on Sun Jun 14.]' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w7-fri',
+        date: '2026-06-05',
+        label: 'Fri Jun 5',
+        time: '1.5 h · SD',
+        dotColor: '#cba6f7',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — SD: Fundamentals & Estimation (Deck 9)' },
+          { type: 'sd-block', label: 'System Design', text: '75 min: Distributed Message Queue (Kafka-style). Math first. Partitions and ordering, consumer groups, at-least-once, retention. Closes the name-and-justify Kafka vs SQS gap. Reference answer.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w7-sat',
+        date: '2026-06-06',
+        label: 'Sat Jun 6',
+        time: '3 h',
+        dotColor: '#a6e3a1',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — pre-mock prime: SD Fundamentals & Estimation (Deck 9) + Situational Drills (Deck 23)' },
+          { type: 'sd-block', label: 'Pre-mock review', text: '10 min: Themes index. If estimation appears in 3+ mocks, drill once more.' },
+          { type: 'mock-block', label: 'SD Mock #5 ★', text: '80 min: Peer/paid. Pick a cold design (e.g., Dropbox or notification). Lead with the numbers. Post-mock → notes.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '60 min: 1 medium + 1 hard, narration on.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w7-sun',
+        date: '2026-06-07',
+        label: 'Sun Jun 7',
+        time: '3 h',
+        dotColor: '#a6e3a1',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — first pass: SD Replication, Partitioning & Consistency (Deck 11) + Caching, CDN & Hashing (Deck 13)' },
+          { type: 'sd-block', label: 'Estimation drill', text: '60 min: 3 cold problems — convert numbers → fleet/storage/bandwidth out loud (Twitter reads QPS, YouTube storage/yr, WhatsApp msg/sec).' },
+          { type: 'sd-block', label: 'Reference notes', text: '60 min: Crawler + Message Queue → clean 1-page reference notes (math included).' },
+          { type: 'mixed-block', label: 'Behavioral', text: '30 min: Speak 3 STAR stories, < 2 min each.' },
+        ],
+        flagged: []
+      },
+    ]
+  },
+  {
+    label: 'Week 8',
+    dates: 'Jun 8 – Jun 14, 2026 · Phase 2 · ~50/50 · infra-tilted',
+    dsaFocus: 'Union-Find + two-heaps + core Trees/Graphs review + fallback',
+    sdFocus: 'Distributed Cache (infra) + Distributed Job Scheduler',
+    checkpoint: '<strong>End of Week 8:</strong> Distributed Cache + Scheduler done. Union-Find + two-heaps drilled. Core trees/graphs warm. Concurrency concepts reviewed. Mock #6 logged.',
+    days: [
+      {
+        id: 'w8-mon',
+        date: '2026-06-08',
+        label: 'Mon Jun 8',
+        time: '1.5 h · SD infra',
+        dotColor: '#cba6f7',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — SD: Caching, CDN & Hashing (Deck 13)' },
+          { type: 'sd-block', label: 'System Design · infra', text: '75 min: Distributed Cache (memcached/Redis at scale — core infra, on-theme for Platforms). Math first (working-set, QPS, memory). Consistent hashing for sharding, replication, eviction (LRU/LFU/TTL), hot-key handling, write policies (write-through vs write-back), coherence/invalidation. Reference answer.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w8-tue',
+        date: '2026-06-09',
+        label: 'Tue Jun 9',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Graphs deck' },
+          { type: 'dsa-block', label: 'Fluency drill · Union-Find + fallback', text: '75 min: Own the Union-Find template (simple, reusable). Number of Connected Components (LC 323) + Redundant Connection (LC 684); learn find + union-by-rank cold. Then fallback protocol on 1 unfamiliar problem. Stretch: Dijkstra via Network Delay Time (LC 743).' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w8-wed',
+        date: '2026-06-10',
+        label: 'Wed Jun 10',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Heap deck' },
+          { type: 'dsa-block', label: 'Two-heaps + core Heap', text: '75 min: Find Median from Data Stream (LC 295 — the two-heaps problem; you know the idea, drill it). Then refresh core heap: Kth Largest Element (LC 215) and recall Merge K / Task Scheduler approaches.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w8-thu',
+        date: '2026-06-11',
+        label: 'Thu Jun 11',
+        time: '1.5 h · SD',
+        dotColor: '#cba6f7',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — SD: Coordination & Transactions (Deck 12)' },
+          { type: 'sd-block', label: 'System Design', text: '75 min: Distributed Job Scheduler. Math first. Sorted-set scheduling, leader election, at-least-once, failure recovery. Reference answer.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w8-fri',
+        date: '2026-06-12',
+        label: 'Fri Jun 12',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Trees deck' },
+          { type: 'dsa-block', label: 'Core review · Trees/Graphs', text: '75 min: Core Trees + Graph BFS/DFS — the most-asked topics, give them the most reps. Number of Islands (LC 200) + Binary Tree Level Order (LC 102) + Lowest Common Ancestor (LC 236) + Clone Graph (LC 133). Narration on.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w8-sat',
+        date: '2026-06-13',
+        label: 'Sat Jun 13',
+        time: '3 h',
+        dotColor: '#a6e3a1',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — pre-mock prime: SD Fundamentals & Estimation (Deck 9) + Situational Drills (Deck 23)' },
+          { type: 'sd-block', label: 'Pre-mock review', text: '10 min: Themes index.' },
+          { type: 'mock-block', label: 'SD Mock #6 ★', text: '80 min: Peer, cold design. Lead with numbers, label every component, hold ground under pushback. Post-mock → notes.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '60 min: 1 medium + 1 hard, narration on.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w8-sun',
+        date: '2026-06-14',
+        label: 'Sun Jun 14',
+        time: '3 h',
+        dotColor: '#a6e3a1',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — first pass: SD Networking & Load Balancing (Deck 15) + Reliability, Observability & Deployment (Deck 16)' },
+          { type: 'sd-block', label: 'Estimation drill', text: '45 min: 3 more cold problems.' },
+          { type: 'sd-block', label: 'Concurrency & systems concepts', text: '60 min: For the infra design + depth rounds — locks vs lock-free/atomics (CAS), race conditions & data races, memory model / happens-before, thread pools & executors, producer/consumer + backpressure, processes vs threads, async/non-blocking I/O, deadlock vs livelock. Explain each in 1–2 sentences. (This + Thu thread-safe LRU = full concurrency coverage.)' },
+          { type: 'mixed-block', label: 'Notes + Behavioral', text: '45 min: Reference notes (Cache + Scheduler) + 2 STAR stories.' },
+        ],
+        flagged: []
+      },
+    ]
+  },
+  {
+    label: 'Week 9',
+    dates: 'Jun 15 – Jun 21, 2026 · Phase 2 · ~50/50 · infra-tilted',
+    dsaFocus: 'Core 1-D DP, Binary Search, Sliding Window review (+ one tricky-implementation rep) + sims',
+    sdFocus: 'Ticketmaster (concurrency) + Distributed Key-Value Store (infra)',
+    checkpoint: '<strong>End of Week 9:</strong> Core DSA refreshed. Ticketmaster + Distributed KV store done. Concurrency covered. Mocks 5–7 logged. Maintenance loop after Jun 21.',
+    days: [
+      {
+        id: 'w9-mon',
+        date: '2026-06-15',
+        label: 'Mon Jun 15',
+        time: '1.5 h · SD',
+        dotColor: '#cba6f7',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — SD: Replication, Partitioning & Consistency (Deck 11)' },
+          { type: 'sd-block', label: 'System Design', text: '75 min: Ticketmaster (booking/concurrency). Math first. Seat-hold with TTL, strong consistency at checkout, no oversell. Reference answer.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w9-tue',
+        date: '2026-06-16',
+        label: 'Tue Jun 16',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — 1-D DP deck' },
+          { type: 'dsa-block', label: 'Core DP + one tricky rep', text: '75 min: Core DP you already know — drill the implementation; skip exotic interval DP (low ROI). Coin Change (LC 322) + House Robber (LC 198) + Longest Increasing Subsequence (LC 300), then Decode Ways (LC 91 — you know it is DP, but the 0s and two-digit cases trip the step-by-step). Book the Sat peer mock today.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w9-wed',
+        date: '2026-06-17',
+        label: 'Wed Jun 17',
+        time: '1.5 h · SD infra',
+        dotColor: '#cba6f7',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — SD: Data Storage & Modeling (Deck 10)' },
+          { type: 'sd-block', label: 'System Design · infra', text: '75 min: Distributed Key-Value Store (Dynamo/Bigtable-style — core infra). Math first. Partitioning (consistent hashing), replication, quorum reads/writes (R + W > N), tunable consistency, conflict resolution (vector clocks / LWW), LSM-tree storage, anti-entropy/read-repair. Reference answer.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w9-thu',
+        date: '2026-06-18',
+        label: 'Thu Jun 18',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Binary Search + Sliding Window decks' },
+          { type: 'dsa-block', label: 'Core review · BS + Sliding Window', text: '75 min: Core Binary Search + Sliding Window — both extremely common, high ROI. Search in Rotated Sorted Array (LC 33) + Koko Eating Bananas (LC 875, flagged) + Longest Substring Without Repeating (LC 3) + Minimum Window Substring (LC 76). Narration on.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w9-fri',
+        date: '2026-06-19',
+        label: 'Fri Jun 19',
+        time: '1.5 h · DSA',
+        dotColor: '#89b4fa',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '15 min: Flashcards — Behavioral STAR recall' },
+          { type: 'dsa-block', label: 'Full LC interview sim', text: '75 min: 1 medium in 20 min + 1 hard in 40 min, mixed/random topic, strict, narration on. Then 15 min re-reading the themes index for the defend-under-pressure habit.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w9-sat',
+        date: '2026-06-20',
+        label: 'Sat Jun 20',
+        time: '3 h',
+        dotColor: '#a6e3a1',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — pre-mock prime: SD Fundamentals & Estimation (Deck 9) + Situational Drills (Deck 23)' },
+          { type: 'sd-block', label: 'Pre-mock review', text: '10 min: Themes index, final gap check.' },
+          { type: 'mock-block', label: 'SD Mock #7 ★', text: '110 min: Full 60-min on-site sim + 50 min self-review. Should feel automatic now: numbers first, components labeled, hold ground. Post-mock → notes.' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '30 min: 1 hard from a confident topic.' },
+        ],
+        flagged: []
+      },
+      {
+        id: 'w9-sun',
+        date: '2026-06-21',
+        label: 'Sun Jun 21',
+        time: '3 h',
+        dotColor: '#a6e3a1',
+        sessions: [
+          { type: 'warmup', label: 'Warm-up', text: '30 min: Flashcards — final sweep: fast pass over weakest SD decks, esp. Fundamentals & Estimation (Deck 9) + Situational Drills (Deck 23)' },
+          { type: 'dsa-block', label: 'LC / DSA', text: '90 min: 2 mixed mediums timed, narration on.' },
+          { type: 'mixed-block', label: 'Wrap-up', text: '60 min: Final themes-index review + behavioral final rehearsal + resume/LinkedIn polish.' },
         ],
         flagged: []
       },
@@ -1493,20 +1785,34 @@ const DECK_LINKS = [
   { pattern: 'Tries (',                             id: 7, sd: false, raw: true },
   { pattern: 'Backtracking deck',                   id: 8, sd: false },
   { pattern: 'Backtracking (',                      id: 8, sd: false, raw: true },
-  { pattern: 'DDIA Ch 1',                           id: 9, sd: true },
+  // System Design — reorganized into 8 topic decks (ids 9-16)
+  { pattern: 'Fundamentals & Estimation',           id: 9,  sd: true },
+  { pattern: 'Estimation drill',                    id: 9,  sd: true },
+  { pattern: 'DDIA Ch 1',                           id: 9,  sd: true },
+  { pattern: 'Data Storage',                        id: 10, sd: true },
   { pattern: 'DDIA Ch 2–3',                         id: 10, sd: true },
   { pattern: 'DDIA Ch 2-3',                         id: 10, sd: true },
+  { pattern: 'Replication, Partitioning',           id: 11, sd: true },
   { pattern: 'Replication deck',                    id: 11, sd: true },
   { pattern: 'Replication)',                        id: 11, sd: true, raw: true },
   { pattern: 'Consistency/CAP deck',                id: 11, sd: true },
-  { pattern: 'Linked List',                         id: 13, sd: false },
-  { pattern: 'Heap deck',                           id: 14, sd: false },
-  { pattern: 'Heap (',                              id: 14, sd: false, raw: true },
-  { pattern: 'Graphs deck',                         id: 15, sd: false },
-  { pattern: '1-D DP',                              id: 16, sd: false },
-  { pattern: 'Intervals deck',                      id: 17, sd: false },
-  { pattern: 'Greedy deck',                         id: 18, sd: false },
-  { pattern: 'DP decks',                            id: 16, sd: false },
+  { pattern: 'Coordination & Transactions',         id: 12, sd: true },
+  { pattern: 'Caching, CDN',                        id: 13, sd: true },
+  { pattern: 'Messaging, Streaming',                id: 14, sd: true },
+  { pattern: 'Deck 12 (Q17',                        id: 14, sd: true },
+  { pattern: 'Deck 12 Q17',                         id: 14, sd: true },
+  { pattern: 'Networking & Load Balancing',         id: 15, sd: true },
+  { pattern: 'Reliability, Observability',          id: 16, sd: true },
+  { pattern: 'Situational',                         id: 23, sd: true },
+  // DSA — renumbered 17-22 after SD expansion
+  { pattern: 'Linked List',                         id: 17, sd: false },
+  { pattern: 'Heap deck',                           id: 18, sd: false },
+  { pattern: 'Heap (',                              id: 18, sd: false, raw: true },
+  { pattern: 'Graphs deck',                         id: 19, sd: false },
+  { pattern: '1-D DP',                              id: 20, sd: false },
+  { pattern: 'Intervals deck',                      id: 21, sd: false },
+  { pattern: 'Greedy deck',                         id: 22, sd: false },
+  { pattern: 'DP decks',                            id: 20, sd: false },
 ];
 
 function linkifyText(html) {
@@ -1672,7 +1978,8 @@ function updateProgress() {
   const done = loadDone();
   // Count total days
   let total = 0, completed = 0;
-  for (let w = 1; w <= 6; w++) {
+  for (let w = 1; w < WEEKS.length; w++) {
+    if (!WEEKS[w]) continue; // index 7 = Flagged placeholder
     for (const day of WEEKS[w].days) {
       total++;
       if (done[day.id]) completed++;
@@ -1704,7 +2011,7 @@ function showWeek(idx) {
   if (tab) tab.classList.add('active');
 
   // Lazy render
-  if (idx >= 1 && idx <= 6) renderWeek(idx);
+  if ((idx >= 1 && idx <= 6) || (idx >= 8 && idx <= 10)) renderWeek(idx);
   if (idx === 7) renderFlagged();
 }
 
@@ -1717,17 +2024,18 @@ function init() {
   const today = new Date(TODAY_STR);
   let todayWeek = 0;
   const ranges = [
-    null,
-    ['2026-04-14','2026-04-19'],
-    ['2026-04-20','2026-04-26'],
-    ['2026-04-27','2026-05-03'],
-    ['2026-05-04','2026-05-10'],
-    ['2026-05-11','2026-05-17'],
-    ['2026-05-18','2026-05-24'],
+    ['2026-04-14','2026-04-19', 1],
+    ['2026-04-20','2026-04-26', 2],
+    ['2026-04-27','2026-05-03', 3],
+    ['2026-05-04','2026-05-10', 4],
+    ['2026-05-11','2026-05-17', 5],
+    ['2026-05-18','2026-05-24', 6],
+    ['2026-06-01','2026-06-07', 8],   // Week 7 · Phase 2
+    ['2026-06-08','2026-06-14', 9],   // Week 8 · Phase 2
+    ['2026-06-15','2026-06-21', 10],  // Week 9 · Phase 2
   ];
-  for (let i = 1; i <= 6; i++) {
-    const [s, e] = ranges[i];
-    if (today >= new Date(s) && today <= new Date(e)) { todayWeek = i; break; }
+  for (const [s, e, idx] of ranges) {
+    if (today >= new Date(s) && today <= new Date(e)) { todayWeek = idx; break; }
   }
 
   // Mark the sidebar button that contains today
@@ -1737,9 +2045,12 @@ function init() {
 
   updateProgress();
 
-  // Open today's week by default, or overview if before/after plan
+  // Open today's week by default. If we're past the 6-week plan, open Phase 2.
+  // Otherwise (before the plan) fall back to the overview.
   if (todayWeek > 0) {
     showWeek(todayWeek);
+  } else if (today > new Date('2026-05-24')) {
+    showWeek(8);
   } else {
     showWeek(0);
   }
